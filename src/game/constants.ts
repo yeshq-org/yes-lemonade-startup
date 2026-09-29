@@ -3,8 +3,8 @@ export const STARTING_POPULARITY = 40
 export const PITCHER_CUPS = 12
 export const BASE_TRAFFIC = 68
 
-export const PRICE_MIN_CENTS = 10
-export const PRICE_MAX_CENTS = 250
+export const PRICE_MIN_CENTS = 50
+export const PRICE_MAX_CENTS = 400
 
 export const TIER_BOSS_EPH = 650
 export const TIER_SCALE_EPH = 350

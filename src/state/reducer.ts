@@ -72,7 +72,7 @@ export function reducer(state: GameState | null, action: Action): GameState | nu
       const prices = todayPrices(state)
       if (!prices) return state
       const cost = cartCostCents(state.cart, prices)
-      if (cost > state.cashCents) return state
+      if (cost > 0 && cost > state.cashCents) return state
       return {
         ...state,
         cashCents: state.cashCents - cost,

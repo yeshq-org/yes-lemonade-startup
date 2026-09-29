@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { CATALOG } from './catalog'
-import { STARTING_CASH_CENTS } from './constants'
-import { IDEAL_ICE, buyRate, expectedVisitors, fairPriceCents, iceComfort, tasteScore } from './demand'
+import { PRICE_MAX_CENTS, PRICE_MIN_CENTS, STARTING_CASH_CENTS } from './constants'
+import { IDEAL_ICE, buyRate, dayFees, expectedVisitors, fairPriceCents, iceComfort, tasteScore } from './demand'
 import { addStock, consume, cupsFromInventory, emptyInventory, inventoryValueCents } from './inventory'
 import { createGame } from './setup'
 import { simulateDay } from './simulate'
@@ -40,24 +40,39 @@ function reserved(state: GameState, item: ItemId): number {
     .reduce((sum, line) => sum + line.packs * CATALOG[item][line.packIndex].qty, 0)
 }
 
-function buyToCover(state: GameState, item: ItemId, need: number): GameState {
+function cashAfterCart(state: GameState): number {
+  const prices = state.priceBook[state.day - 1]!
+  const spent = state.cart.reduce((sum, line) => sum + line.packs * prices[line.item][line.packIndex]!, 0)
+  return state.cashCents - spent
+}
+
+/** Buy what the day needs, but leave the stand fee in the till. */
+function buyToCover(state: GameState, item: ItemId, need: number, keepCents: number): GameState {
   let next = state
   let guard = 0
   while (stockOf(next, item) + reserved(next, item) < need && guard < 20) {
     guard += 1
-    const prices = next.priceBook[next.day - 1]!
     const remaining = need - stockOf(next, item) - reserved(next, item)
     const affordable = CATALOG[item]
-      .map((pack, index) => ({ index, qty: pack.qty, price: prices[item][index]! }))
-      .filter((pack) => reducer(next, { type: 'add-pack', item, packIndex: pack.index }) !== next)
+      .map((pack, index) => ({ index, qty: pack.qty }))
+      .filter((pack) => {
+        const drafted = reducer(next, { type: 'add-pack', item, packIndex: pack.index })
+        return drafted !== null && drafted !== next && cashAfterCart(drafted) >= keepCents
+      })
     if (affordable.length === 0) break
-    const covering = affordable.find((pack) => pack.qty >= remaining)
-    const pick = covering ?? affordable[affordable.length - 1]!
+    const pick = affordable.find((pack) => pack.qty >= remaining) ?? affordable[0]!
     const drafted = reducer(next, { type: 'add-pack', item, packIndex: pick.index })
     if (!drafted || drafted === next) break
     next = drafted
   }
   return next
+}
+
+function holdSmall(state: GameState, item: ItemId, keepCents: number): GameState {
+  if (stockOf(state, item) + reserved(state, item) > 0) return state
+  const drafted = reducer(state, { type: 'add-pack', item, packIndex: 0 })
+  if (!drafted || drafted === state || cashAfterCart(drafted) < keepCents) return state
+  return drafted
 }
 
 function finish(seed: number, style: 'smart' | 'naive' | 'closed'): GameState {
@@ -72,15 +87,10 @@ function finish(seed: number, style: 'smart' | 'naive' | 'closed'): GameState {
       state = reducer(state, { type: 'set-lemons', value: 4 })!
       state = reducer(state, { type: 'set-sugar', value: 4 })!
       state = reducer(state, { type: 'set-ice', value: 4 })!
-      state = reducer(state, { type: 'set-price', cents: 25 })!
+      state = reducer(state, { type: 'set-price', cents: PRICE_MIN_CENTS })!
       state = reducer(state, { type: 'set-hours', hours: 8 })!
-      for (const [item, packIndex] of [
-        ['cups', 1],
-        ['lemons', 1],
-        ['sugar', 1],
-        ['ice', 1],
-      ] as const) {
-        state = reducer(state, { type: 'add-pack', item, packIndex })!
+      for (const item of ['cups', 'lemons', 'sugar', 'ice'] as const) {
+        state = reducer(state, { type: 'add-pack', item, packIndex: 0 })!
       }
       state = reducer(state, { type: 'checkout' })!
     } else {
@@ -89,7 +99,7 @@ function finish(seed: number, style: 'smart' | 'naive' | 'closed'): GameState {
       const comfort = iceComfort(ice, weather.heat)
       const fair = fairPriceCents(weather, taste, comfort)
       const hours: Hours = weather.heat === 'cold' && weather.sky === 'rain' ? 4 : weather.heat === 'cold' ? 6 : 8
-      const price = Math.min(250, Math.max(25, Math.round((fair * 0.92) / 5) * 5))
+      const price = Math.min(PRICE_MAX_CENTS, Math.max(PRICE_MIN_CENTS, Math.round((fair * 0.92) / 5) * 5))
       state = reducer(state, { type: 'set-lemons', value: 4 })!
       state = reducer(state, { type: 'set-sugar', value: 4 })!
       state = reducer(state, { type: 'set-ice', value: ice })!
@@ -99,10 +109,16 @@ function finish(seed: number, style: 'smart' | 'naive' | 'closed'): GameState {
         4,
         Math.ceil(expectedVisitors(weather, hours, state.popularity) * buyRate(price, fair, taste)),
       )
-      state = buyToCover(state, 'cups', expectedBuyers)
-      state = buyToCover(state, 'lemons', Math.ceil((expectedBuyers * 4) / 12))
-      state = buyToCover(state, 'sugar', Math.ceil((expectedBuyers * 4) / 12))
-      if (ice > 0) state = buyToCover(state, 'ice', Math.ceil(expectedBuyers * ice))
+      const fees = dayFees(hours)
+      const keep = fees.standFeeCents + fees.helperCents
+      state = holdSmall(state, 'cups', keep)
+      state = holdSmall(state, 'lemons', keep)
+      state = holdSmall(state, 'sugar', keep)
+      if (ice > 0) state = holdSmall(state, 'ice', keep)
+      state = buyToCover(state, 'cups', expectedBuyers, keep)
+      state = buyToCover(state, 'lemons', Math.ceil((expectedBuyers * 4) / 12), keep)
+      state = buyToCover(state, 'sugar', Math.ceil((expectedBuyers * 4) / 12), keep)
+      if (ice > 0) state = buyToCover(state, 'ice', Math.ceil(expectedBuyers * ice), keep)
       state = reducer(state, { type: 'checkout' })!
     }
     state = reducer(state, { type: 'open' })!
@@ -118,20 +134,20 @@ function finish(seed: number, style: 'smart' | 'naive' | 'closed'): GameState {
 
 describe('inventory', () => {
   it('recognizes every penny of a pack through FIFO', () => {
-    let inv = addStock(emptyInventory(), 'lemons', 10, 96)
+    let inv = addStock(emptyInventory(), 'lemons', 10, 680)
     const first = consume(inv.lemons, 4)
     inv = { ...inv, lemons: first.lots }
     const rest = consume(inv.lemons, 116)
-    expect(first.costCents + rest.costCents).toBe(96)
+    expect(first.costCents + rest.costCents).toBe(680)
     expect(rest.lots).toEqual([])
   })
 
   it('limits cups by the scarcest ingredient', () => {
     let inv = emptyInventory()
-    inv = addStock(inv, 'cups', 100, 300)
-    inv = addStock(inv, 'lemons', 10, 100)
-    inv = addStock(inv, 'sugar', 48, 300)
-    inv = addStock(inv, 'ice', 100, 80)
+    inv = addStock(inv, 'cups', 100, 898)
+    inv = addStock(inv, 'lemons', 10, 680)
+    inv = addStock(inv, 'sugar', 48, 1560)
+    inv = addStock(inv, 'ice', 100, 188)
     const cups = cupsFromInventory(inv, { lemons: 4, sugar: 4, ice: 4, priceCents: 50 })
     expect(cups).toBe(25)
   })
@@ -169,7 +185,7 @@ describe('demand shape', () => {
       seed: 8,
       weather: { heat: 'warm', sky: 'clear', tempF: 82 },
       inventory: stocked(),
-      recipe: { lemons: 4, sugar: 4, ice: 4, priceCents: 75 },
+      recipe: { lemons: 4, sugar: 4, ice: 4, priceCents: 150 },
       hours: 8,
       popularity: 50,
       previousSatisfaction: null,
@@ -179,7 +195,7 @@ describe('demand shape', () => {
       seed: 8,
       weather: { heat: 'warm', sky: 'clear', tempF: 82 },
       inventory: stocked(),
-      recipe: { lemons: 4, sugar: 4, ice: 4, priceCents: 250 },
+      recipe: { lemons: 4, sugar: 4, ice: 4, priceCents: 400 },
       hours: 8,
       popularity: 50,
       previousSatisfaction: null,
@@ -216,7 +232,7 @@ describe('season', () => {
     expect(summary.earningsPerHourCents).not.toBeNull()
   })
 
-  it('pays a careful price better than a quarter-a-cup habit', () => {
+  it('pays a careful price better than charging the 50 cent floor', () => {
     const seeds = [1, 2, 3, 7, 11, 21, 42, 99]
     let wins = 0
     for (const seed of seeds) {
@@ -233,6 +249,20 @@ describe('season', () => {
     const next = reducer(state, { type: 'add-pack', item: 'cups', packIndex: 2 })
     expect(next?.cart).toEqual([])
     expect(next?.cashCents).toBe(50)
+  })
+
+  it('lets the four small packs fit in the starting $20', () => {
+    const items = ['cups', 'lemons', 'sugar', 'ice'] as const
+    const base = items.reduce((sum, item) => sum + CATALOG[item][0].baseCents, 0)
+    expect(base).toBe(282 + 680 + 288 + 188)
+    expect(base).toBeLessThanOrEqual(STARTING_CASH_CENTS)
+    const worstDay = items.reduce((sum, item) => sum + Math.round(CATALOG[item][0].baseCents * 1.1), 0)
+    expect(worstDay).toBeLessThanOrEqual(STARTING_CASH_CENTS)
+  })
+
+  it('prices a hot clear cup near $2.10 and a cold rain near 75 cents', () => {
+    expect(fairPriceCents({ heat: 'hot', sky: 'clear', tempF: 96 }, 100, 100)).toBe(210)
+    expect(fairPriceCents({ heat: 'cold', sky: 'rain', tempF: 48 }, 0, 0)).toBe(75)
   })
 
   it('prices stay inside a 10 percent band', () => {

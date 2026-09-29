@@ -8,7 +8,7 @@ export const DEFAULT_RECIPE: Recipe = {
   lemons: 4,
   sugar: 4,
   ice: 4,
-  priceCents: 50,
+  priceCents: 150,
 }
 
 export function createGame(seasonDays: SeasonLength, seed: number): GameState {

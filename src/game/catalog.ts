@@ -7,24 +7,24 @@ export interface Pack {
 
 export const CATALOG: Record<ItemId, [Pack, Pack, Pack]> = {
   cups: [
-    { qty: 25, baseCents: 84 },
-    { qty: 50, baseCents: 151 },
-    { qty: 100, baseCents: 302 },
+    { qty: 25, baseCents: 282 },
+    { qty: 50, baseCents: 512 },
+    { qty: 100, baseCents: 898 },
   ],
   lemons: [
-    { qty: 10, baseCents: 96 },
-    { qty: 30, baseCents: 241 },
-    { qty: 75, baseCents: 416 },
+    { qty: 10, baseCents: 680 },
+    { qty: 30, baseCents: 1620 },
+    { qty: 75, baseCents: 3300 },
   ],
   sugar: [
-    { qty: 8, baseCents: 72 },
-    { qty: 20, baseCents: 159 },
-    { qty: 48, baseCents: 347 },
+    { qty: 8, baseCents: 288 },
+    { qty: 20, baseCents: 650 },
+    { qty: 48, baseCents: 1560 },
   ],
   ice: [
-    { qty: 100, baseCents: 83 },
-    { qty: 250, baseCents: 203 },
-    { qty: 500, baseCents: 389 },
+    { qty: 100, baseCents: 188 },
+    { qty: 250, baseCents: 350 },
+    { qty: 500, baseCents: 625 },
   ],
 }
 

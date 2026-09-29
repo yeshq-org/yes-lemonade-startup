@@ -88,12 +88,12 @@ export function iceCaption(score: number): string {
 
 /** What a happy customer is glad to pay, in cents, before we apply elasticity. */
 export function fairPriceCents(weather: Weather, taste: number, comfort: number): number {
-  let cents = 42
-  cents += { hot: 38, warm: 16, cool: 0, cold: -10 }[weather.heat]
-  cents += { clear: 14, cloudy: 2, rain: -10 }[weather.sky]
-  cents += Math.round((taste / 100) * 22)
-  cents += Math.round((comfort / 100) * 14)
-  return clamp(cents, 20, 200)
+  let cents = 100
+  cents += { hot: 50, warm: 25, cool: 0, cold: -15 }[weather.heat]
+  cents += { clear: 20, cloudy: 5, rain: -15 }[weather.sky]
+  cents += Math.round((clamp(taste, 0, 100) / 100) * 25)
+  cents += Math.round((clamp(comfort, 0, 100) / 100) * 15)
+  return clamp(cents, 75, 250)
 }
 
 export function buyRate(priceCents: number, fairCents: number, taste: number): number {
