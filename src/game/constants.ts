@@ -1,0 +1,13 @@
+export const STARTING_CASH_CENTS = 2000
+export const STARTING_POPULARITY = 40
+export const PITCHER_CUPS = 12
+export const BASE_TRAFFIC = 68
+
+export const PRICE_MIN_CENTS = 10
+export const PRICE_MAX_CENTS = 250
+
+export const TIER_BOSS_EPH = 650
+export const TIER_SCALE_EPH = 350
+export const TIER_GROW_EPH = 140
+
+export const BUSINESS_QUESTION = 'Did I actually build a good business?'
