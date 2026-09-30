@@ -1,4 +1,5 @@
 import type { Weather } from '../game/types'
+import { weatherReadout } from '../game/weather'
 
 export function skyColors(weather: Weather): [string, string] {
   if (weather.sky === 'rain') return ['#9eb0c2', '#d5dee6']
@@ -13,7 +14,7 @@ export function WeatherArt({ weather }: { weather: Weather }) {
   const rainy = weather.sky === 'rain'
   const cloudy = weather.sky !== 'clear'
   return (
-    <svg viewBox="0 0 360 168" className="h-auto w-full" role="img" aria-label={`${weather.tempF} degrees`}>
+    <svg viewBox="0 0 360 168" className="h-auto w-full" role="img" aria-label={weatherReadout(weather)}>
       <defs>
         <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor={top} />
@@ -23,8 +24,8 @@ export function WeatherArt({ weather }: { weather: Weather }) {
       <rect width="360" height="168" rx="28" fill="url(#sky)" />
       {weather.sky !== 'rain' && (
         <g className={weather.heat === 'hot' ? 'floaty' : undefined}>
-          <circle cx="276" cy="54" r="26" fill="#ffe14a" />
-          <circle cx="276" cy="54" r="34" fill="#ffe14a" opacity="0.35" />
+          <circle cx="318" cy="58" r="22" fill="#ffe14a" />
+          <circle cx="318" cy="58" r="30" fill="#ffe14a" opacity="0.35" />
         </g>
       )}
       {cloudy && (
@@ -51,6 +52,12 @@ export function WeatherArt({ weather }: { weather: Weather }) {
         ))}
       <path d="M0 132 Q90 112 180 128 T360 120 V168 H0 Z" fill="#e7d3ae" />
       <path d="M0 146 Q100 132 190 148 T360 140 V168 H0 Z" fill="#d7c09a" />
+      <g>
+        <rect x="12" y="12" width="268" height="28" rx="14" fill="#fffdfb" />
+        <text x="146" y="31" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="12" fontWeight="700" fill="#1c1915">
+          {weatherReadout(weather)}
+        </text>
+      </g>
     </svg>
   )
 }

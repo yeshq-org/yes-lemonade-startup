@@ -1,12 +1,11 @@
 import { bestPackIndex, CATALOG, ITEM_COPY, packLabel } from '../../game/catalog'
-import { IDEAL_ICE, expectedVisitors } from '../../game/demand'
-import { cartCostCents, displayCount, formatStock, totalQty } from '../../game/inventory'
+import { cartCostCents, formatStock, totalQty } from '../../game/inventory'
 import { formatMoney, formatUnitCents } from '../../game/money'
 import { ITEM_IDS, type ItemId } from '../../game/types'
-import { weatherPhrase } from '../../game/weather'
+import { weatherReadout } from '../../game/weather'
 import { useGame } from '../../state/GameContext'
 import { Header } from '../Header'
-import { Button, Card, Dock, Shell, cx, useFocusHeading } from '../ui'
+import { Button, Card, Dock, Shell, useFocusHeading } from '../ui'
 
 export function Shop({ onTitle }: { onTitle: () => void }) {
   const { state, dispatch } = useGame()
@@ -19,13 +18,6 @@ export function Shop({ onTitle }: { onTitle: () => void }) {
   const after = state.cashCents - cost
   const onHand = ITEM_IDS.map((item) => formatStock(item, totalQty(state.inventory[item]))).join(' · ')
   const emptyStand = ITEM_IDS.every((item) => totalQty(state.inventory[item]) === 0)
-  const visitors = expectedVisitors(weather, 8, state.popularity)
-  const iceHave =
-    displayCount('ice', totalQty(state.inventory.ice)) +
-    state.cart.filter((line) => line.item === 'ice').reduce((sum, line) => sum + line.packs * CATALOG.ice[line.packIndex].qty, 0)
-  const iceNeed = visitors * Math.max(state.recipe.ice, IDEAL_ICE[weather.heat], 1)
-  const iceWarning = iceHave > iceNeed + 60
-  const harshIce = (weather.heat === 'cold' || weather.sky === 'rain') && state.cart.some((line) => line.item === 'ice' && line.packIndex === 2)
 
   return (
     <Shell>
@@ -34,8 +26,8 @@ export function Shop({ onTitle }: { onTitle: () => void }) {
         <h1 ref={heading} tabIndex={-1} className="font-display text-4xl font-semibold outline-none">
           Stock the stand
         </h1>
-        <p className="mt-2 text-ink-soft">
-          {weatherPhrase(weather)} · prices moved today. Bigger packs usually cost less per piece. Ice melts tonight no matter what.
+        <p className="mt-2 text-ink-soft" data-testid="day-weather">
+          {weatherReadout(weather)} · prices moved today. Bigger packs usually cost less per piece.
         </p>
         <Card className="mt-4">
           <p className="text-xs font-bold tracking-[0.14em] text-teal">ON HAND</p>
@@ -46,16 +38,6 @@ export function Shop({ onTitle }: { onTitle: () => void }) {
             <ItemBlock key={item} item={item} />
           ))}
         </div>
-        {(iceWarning || harshIce) && (
-          <Card className="mt-4 border border-coral/30">
-            <p className="font-semibold text-coral">Ice warning</p>
-            <p className="mt-1 text-sm">
-              {harshIce
-                ? 'A huge ice pack on a cold or rainy day mostly melts. That cash does not come back in the morning.'
-                : 'That is a lot of ice for the crowd you are likely to see. Cubes you do not sell are gone overnight.'}
-            </p>
-          </Card>
-        )}
       </main>
       <Dock>
         <div className="mb-2 flex items-baseline justify-between text-sm">
@@ -86,7 +68,6 @@ function ItemBlock({ item }: { item: ItemId }) {
     <section>
       <div className="mb-2 flex items-baseline justify-between">
         <h2 className="font-display text-2xl font-semibold">{copy.name}</h2>
-        <p className={cx('text-sm font-semibold', item === 'ice' ? 'text-coral' : 'text-ink-soft')}>{copy.keeps}</p>
       </div>
       <div className="space-y-2">
         {CATALOG[item].map((pack, index) => {

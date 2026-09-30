@@ -7,19 +7,32 @@ import {
   type Pedestrian,
   type SidewalkCast,
 } from '../game/sidewalk'
-import type { DayResult } from '../game/types'
+import type { DayResult, Keeper } from '../game/types'
+import { weatherReadout } from '../game/weather'
 import { skyColors } from './art'
 
 const LOOKS = [
-  { tone: '#8d5524', shirt: '#0e5e59', hair: '#1c1915' },
-  { tone: '#f0c7a0', shirt: '#245c43', hair: '#5c3317' },
-  { tone: '#c68642', shirt: '#2f4d86', hair: '#24160f' },
-  { tone: '#f3d2b5', shirt: '#b4532a', hair: '#2a2118' },
-  { tone: '#6b3a22', shirt: '#efe6d2', hair: '#140e0b' },
-  { tone: '#e0ac7a', shirt: '#1c4e6e', hair: '#3a2414' },
+  { tone: '#8d5524', shirt: '#0e5e59', hair: '#1c1915', pants: '#243044' },
+  { tone: '#f0c7a0', shirt: '#245c43', hair: '#5c3317', pants: '#3d4a62' },
+  { tone: '#c68642', shirt: '#2f4d86', hair: '#24160f', pants: '#5c3b2e' },
+  { tone: '#f3d2b5', shirt: '#b4532a', hair: '#2a2118', pants: '#2c3d55' },
+  { tone: '#6b3a22', shirt: '#efe6d2', hair: '#140e0b', pants: '#1e293b' },
+  { tone: '#e0ac7a', shirt: '#1c4e6e', hair: '#3a2414', pants: '#4a3728' },
 ]
 
-export function SidewalkDay({ result, cast, elapsed, reduced }: { result: DayResult; cast: SidewalkCast; elapsed: number; reduced: boolean }) {
+export function SidewalkDay({
+  result,
+  cast,
+  elapsed,
+  reduced,
+  keeper,
+}: {
+  result: DayResult
+  cast: SidewalkCast
+  elapsed: number
+  reduced: boolean
+  keeper: Keeper
+}) {
   const sceneRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(360)
   useEffect(() => {
@@ -77,7 +90,13 @@ export function SidewalkDay({ result, cast, elapsed, reduced }: { result: DayRes
             <span key={slab} className="absolute top-0 bottom-0 w-px bg-[#c9b495]" style={{ left: `${slab * 20}%` }} />
           ))}
         </div>
-        <LemonadeStand price={formatMoney(result.recipe.priceCents)} closed={closed} />
+        <p
+          data-testid="day-weather"
+          className="absolute top-3 right-16 left-3 z-40 rounded-full bg-white/95 px-3 py-1 text-[12px] leading-snug font-semibold text-ink shadow-[0_4px_12px_rgba(28,25,21,0.12)]"
+        >
+          {weatherReadout(result.weather)}
+        </p>
+        <LemonadeStand price={formatMoney(result.recipe.priceCents)} closed={closed} keeper={keeper} />
         {figures.map(({ person, x }) => (
           <Person
             key={person.id}
@@ -92,7 +111,7 @@ export function SidewalkDay({ result, cast, elapsed, reduced }: { result: DayRes
           <p
             data-testid="customer-comment"
             aria-live="polite"
-            className="pop-in absolute top-3 right-3 left-3 z-30 rounded-2xl bg-white px-3 py-2 text-[15px] leading-snug font-semibold text-ink shadow-[0_8px_20px_rgba(28,25,21,0.12)]"
+            className="pop-in absolute top-16 right-3 left-3 z-30 rounded-2xl bg-white px-3 py-2 text-[15px] leading-snug font-semibold text-ink shadow-[0_8px_20px_rgba(28,25,21,0.12)]"
           >
             {speaker.comment}
           </p>
@@ -116,38 +135,101 @@ function Person({
   cup: boolean
 }) {
   const look = LOOKS[person.look % LOOKS.length]!
-  const front = walking && step ? 9 : walking ? -2 : 2
-  const back = walking && step ? -7 : walking ? 8 : -2
   const bob = walking ? (step ? -2 : 0) : 0
   return (
     <div
       data-testid="pedestrian"
       data-kind={person.kind}
-      className="absolute z-20 w-14"
+      className="absolute z-20 w-16"
       style={{ left: x, bottom: 34, transform: `translateY(${bob}px)` }}
     >
-      <svg viewBox="0 0 56 86" className="h-[96px] w-14 overflow-visible" aria-hidden="true">
-        <ellipse cx="28" cy="82" rx="14" ry="3.2" fill="#1c1915" opacity="0.16" />
-        <path d={`M22 50 L${22 + back} 76`} stroke="#2a241c" strokeWidth="4.5" strokeLinecap="round" />
-        <path d={`M34 50 L${34 + front} 76`} stroke="#2a241c" strokeWidth="4.5" strokeLinecap="round" />
-        <path d="M14 32 h28 v20 q0 9 -14 9 q-14 0 -14 -9 z" fill={look.shirt} />
-        <circle cx="28" cy="22" r="13" fill={look.tone} />
-        <path d="M15 18 Q28 2 41 17 Q34 9 28 11 Q21 9 15 18" fill={look.hair} />
-        <circle cx="23" cy="22" r="1.4" fill="#1c1915" />
-        <circle cx="33" cy="22" r="1.4" fill="#1c1915" />
-        <path d="M23 28 Q28 32 33 28" fill="none" stroke="#1c1915" strokeWidth="1.4" strokeLinecap="round" />
-        {cup && (
-          <g>
-            <path d="M38 38 h9 l-1.2 12 h-6.6 z" fill="#ffe14a" stroke="#e2a800" strokeWidth="1.2" />
-            <path d="M40 38 q4.5 -6 9 0" fill="none" stroke="#fff" strokeWidth="1.5" />
-          </g>
-        )}
-      </svg>
+      <PersonSvg look={look} hair={person.look % 6} walking={walking} step={step} cup={cup} />
     </div>
   )
 }
 
-function LemonadeStand({ price, closed }: { price: string; closed: boolean }) {
+function PersonSvg({
+  look,
+  hair,
+  walking,
+  step,
+  cup,
+}: {
+  look: (typeof LOOKS)[number]
+  hair: number
+  walking: boolean
+  step: boolean
+  cup: boolean
+}) {
+  const stride = walking ? (step ? 18 : -18) : 0
+  const swing = walking ? (step ? -20 : 20) : cup ? 10 : 0
+  return (
+    <svg viewBox="0 0 64 120" className="h-[132px] w-[68px] overflow-visible" aria-hidden="true">
+      <ellipse cx="32" cy="116" rx="16" ry="3.2" fill="#1c1915" opacity="0.16" />
+      <g transform={`rotate(${-stride} 24 70)`}>
+        <path d="M19 68 h10 v30 q0 4 -5 4 h-3 q-4 0 -4 -5 z" fill={look.pants} />
+        <ellipse cx="23" cy="104" rx="7" ry="3.2" fill="#1c1915" />
+      </g>
+      <g transform={`rotate(${stride} 40 70)`}>
+        <path d="M35 68 h10 v30 q0 4 -5 4 h-3 q-4 0 -4 -5 z" fill={look.pants} />
+        <ellipse cx="41" cy="104" rx="7" ry="3.2" fill="#1c1915" />
+      </g>
+      <path d="M16 40 h32 v30 q0 6 -16 8 q-16 -2 -16 -8 z" fill={look.shirt} />
+      <path d="M24 46 h16 v16 h-16 z" fill="#0e5e59" />
+      <rect x="28" y="32" width="8" height="10" rx="3" fill={look.tone} />
+      <g transform={`rotate(${-swing} 16 44)`}>
+        <path d="M12 40 h8 v22 q0 4 -4 4 t-4 -4 z" fill={look.tone} />
+      </g>
+      <g transform={`rotate(${swing} 48 44)`}>
+        <path d="M44 40 h8 v22 q0 4 -4 4 t-4 -4 z" fill={look.tone} />
+        {cup && (
+          <g>
+            <path d="M46 60 h9 l-1 11 h-7 z" fill="#ffe14a" stroke="#e2a800" strokeWidth="1.1" />
+            <path d="M47 60 q4.5 -5 8 0" fill="none" stroke="#fff" strokeWidth="1.3" />
+          </g>
+        )}
+      </g>
+      <Hair style={hair} color={look.hair} />
+      <circle cx="32" cy="20" r="12" fill={look.tone} />
+      <circle cx="27.5" cy="20" r="1.35" fill="#1c1915" />
+      <circle cx="36.5" cy="20" r="1.35" fill="#1c1915" />
+      <path d="M31.2 18.2 v3.2" stroke="#1c1915" strokeWidth="1.1" strokeLinecap="round" opacity="0.5" />
+      <path d="M27.5 25.5 Q32 29 36.5 25.5" fill="none" stroke="#1c1915" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function Hair({ style, color }: { style: number; color: string }) {
+  if (style === 1) {
+    return <path d="M20 20 Q32 2 44 18 Q40 28 32 30 Q22 28 20 20" fill={color} />
+  }
+  if (style === 2) {
+    return (
+      <g fill={color}>
+        <path d="M21 16 Q32 4 43 16 Q40 10 32 10 Q24 10 21 16" />
+        <circle cx="18" cy="22" r="4" />
+        <circle cx="46" cy="22" r="4" />
+      </g>
+    )
+  }
+  if (style === 3) {
+    return <path d="M18 18 Q32 0 46 16 L44 36 Q32 28 20 36 Z" fill={color} />
+  }
+  if (style === 4) {
+    return (
+      <g fill={color}>
+        <path d="M22 16 Q32 6 42 16 Q38 12 32 12 Q26 12 22 16" />
+        <circle cx="40" cy="8" r="5" />
+      </g>
+    )
+  }
+  if (style === 5) {
+    return <path d="M23 14 Q32 8 41 14 Q39 12 32 12 Q25 12 23 14" fill={color} />
+  }
+  return <path d="M21 18 Q32 4 43 18 Q38 12 32 12 Q26 12 21 18" fill={color} />
+}
+
+function LemonadeStand({ price, closed, keeper }: { price: string; closed: boolean; keeper: Keeper }) {
   return (
     <svg
       data-testid="lemonade-stand"
@@ -162,12 +244,14 @@ function LemonadeStand({ price, closed }: { price: string; closed: boolean }) {
         <rect key={stripe} x={10 + stripe * 20} y="52" width="10" height="16" fill="#0e5e59" />
       ))}
       <path d="M10 68 q12 10 24 0 q12 10 24 0 q12 10 24 0 q12 10 24 0 q12 10 24 0 q12 10 24 0 v6 H10 z" fill="#0e5e59" />
+      <CounterKeeper keeper={keeper} />
       <rect x="40" y="16" width="82" height="30" rx="7" fill="#fffdfb" stroke="#0e5e59" strokeWidth="2" />
       <text x="81" y="36" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="13" fontWeight="700" fill="#0e5e59">
         LEMONADE
       </text>
       <rect x="16" y="108" width="132" height="38" rx="7" fill="#c9854a" />
       <rect x="16" y="138" width="132" height="12" rx="3" fill="#a86b38" />
+      <KeeperHands keeper={keeper} />
       <rect x="28" y="116" width="36" height="20" rx="3" fill="#fff6d2" stroke="#e2a800" />
       <rect x="34" y="116" width="8" height="20" fill="#ffe14a" opacity="0.85" />
       <path d="M78 92 h28 v26 h-22 q-6 0 -6 -8 z" fill="#fff8dc" stroke="#e2a800" strokeWidth="2" />
@@ -179,12 +263,45 @@ function LemonadeStand({ price, closed }: { price: string; closed: boolean }) {
       </text>
       {closed && (
         <g>
-          <rect x="34" y="78" width="92" height="24" rx="6" fill="#1c1915" />
-          <text x="80" y="95" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="13" fontWeight="700" fill="#ffe14a">
+          <rect x="96" y="78" width="58" height="20" rx="5" fill="#1c1915" />
+          <text x="125" y="92" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="11" fontWeight="700" fill="#ffe14a">
             CLOSED
           </text>
         </g>
       )}
     </svg>
+  )
+}
+
+function CounterKeeper({ keeper }: { keeper: Keeper }) {
+  const girl = keeper === 'girl'
+  const skin = girl ? '#e0ac7a' : '#c68642'
+  const hair = girl ? '#3a2414' : '#1c1915'
+  return (
+    <g data-testid="stand-keeper" data-keeper={keeper}>
+      <path d={girl ? 'M36 100 h28 v44 h-28 z' : 'M30 98 h40 v46 h-40 z'} fill="#fff6e8" />
+      <path d={girl ? 'M40 104 h20 v14 h-20 z' : 'M36 102 h28 v14 h-28 z'} fill="#0e5e59" />
+      <rect x="44" y="82" width="8" height="12" rx="3" fill={skin} />
+      {girl ? (
+        <path d="M32 90 Q48 74 64 88 L62 106 Q48 96 34 106 Z" fill={hair} />
+      ) : (
+        <path d="M34 80 Q48 70 62 80 Q58 74 48 74 Q38 74 34 80" fill={hair} />
+      )}
+      <circle cx="48" cy="90" r={girl ? 12 : 13} fill={skin} />
+      <circle cx="43.5" cy="90" r="1.3" fill="#1c1915" />
+      <circle cx="52.5" cy="90" r="1.3" fill="#1c1915" />
+      <path d="M47.2 88.2 v2.6" stroke="#1c1915" strokeWidth="1" strokeLinecap="round" opacity="0.45" />
+      <path d="M44 95 Q48 98 52 95" fill="none" stroke="#1c1915" strokeWidth="1.2" strokeLinecap="round" />
+    </g>
+  )
+}
+
+function KeeperHands({ keeper }: { keeper: Keeper }) {
+  const skin = keeper === 'girl' ? '#e0ac7a' : '#c68642'
+  return (
+    <g aria-hidden="true">
+      <ellipse cx="40" cy="110" rx="6" ry="3.2" fill={skin} />
+      <ellipse cx="58" cy="110" rx="6" ry="3.2" fill={skin} />
+    </g>
   )
 }

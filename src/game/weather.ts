@@ -1,4 +1,5 @@
 import { CATALOG } from './catalog'
+import { roundHalfAway } from './money'
 import type { DayPrices, Heat, Sky, Weather } from './types'
 
 const HEATS: Heat[] = ['hot', 'warm', 'cool', 'cold']
@@ -61,6 +62,16 @@ export function weatherPhrase(weather: Weather): string {
   const heat = { hot: 'Hot', warm: 'Warm', cool: 'Cool', cold: 'Cold' }[weather.heat]
   const sky = { clear: 'clear', cloudy: 'cloudy', rain: 'rainy' }[weather.sky]
   return `${heat} and ${sky}`
+}
+
+/** Celsius from Fahrenheit, rounded half away from zero. */
+export function celsiusFromFahrenheit(tempF: number): number {
+  return roundHalfAway(((tempF - 32) * 5) / 9)
+}
+
+/** Sky phrase plus both temperatures, as in "Hot and clear · 32°C / 90°F". */
+export function weatherReadout(weather: Weather): string {
+  return `${weatherPhrase(weather)} · ${celsiusFromFahrenheit(weather.tempF)}°C / ${weather.tempF}°F`
 }
 
 export function weekdayName(dayNumber: number): string {

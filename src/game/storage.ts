@@ -1,4 +1,4 @@
-import type { GameState, SeasonLength } from './types'
+import type { GameState, Inventory, Keeper, Lot, SeasonLength } from './types'
 
 export const SAVE_KEY = 'yes-lemonade-startup-v1'
 
@@ -19,13 +19,35 @@ function isGameState(value: unknown): value is GameState {
   )
 }
 
+export function normalizeSave(value: unknown): GameState | null {
+  if (!isGameState(value)) return null
+  const keeper: Keeper = value.keeper === 'guy' ? 'guy' : 'girl'
+  return {
+    ...value,
+    keeper,
+    inventory: stampPurchaseDay(value.inventory, value.day),
+    history: value.history.map((day) => ({
+      ...day,
+      spoilLemonsQty: day.spoilLemonsQty ?? 0,
+      spoilLemonsCents: day.spoilLemonsCents ?? 0,
+      spoilSugarQty: day.spoilSugarQty ?? 0,
+      spoilSugarCents: day.spoilSugarCents ?? 0,
+    })),
+  }
+}
+
+function stampPurchaseDay(inv: Inventory, day: number): Inventory {
+  const stamp = (lots: Lot[]): Lot[] => lots.map((lot) => ({ ...lot, boughtDay: typeof lot.boughtDay === 'number' ? lot.boughtDay : day }))
+  return { cups: stamp(inv.cups), lemons: stamp(inv.lemons), sugar: stamp(inv.sugar), ice: stamp(inv.ice) }
+}
+
 export function loadGame(): GameState | null {
   try {
     if (typeof localStorage === 'undefined') return null
     const raw = localStorage.getItem(SAVE_KEY)
     if (!raw) return null
     const parsed: unknown = JSON.parse(raw)
-    return isGameState(parsed) ? parsed : null
+    return normalizeSave(parsed)
   } catch {
     return null
   }

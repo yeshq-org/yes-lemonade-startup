@@ -1,7 +1,7 @@
 import { morningBrief } from '../../game/coach'
 import { expectedVisitors, trafficWord } from '../../game/demand'
 import { formatHourly, formatMoney } from '../../game/money'
-import { weatherPhrase } from '../../game/weather'
+import { weatherReadout } from '../../game/weather'
 import { useGame } from '../../state/GameContext'
 import { LemonMentor, WeatherArt } from '../art'
 import { Header } from '../Header'
@@ -21,10 +21,9 @@ export function Morning({ onTitle }: { onTitle: () => void }) {
       <Header onTitle={onTitle} />
       <main className="flex-1 px-4 pt-4">
         <WeatherArt weather={weather} />
-        <h1 ref={heading} tabIndex={-1} className="mt-4 font-display text-4xl leading-tight font-semibold outline-none">
-          {weatherPhrase(weather)}
+        <h1 ref={heading} tabIndex={-1} className="mt-4 font-display text-3xl leading-tight font-semibold outline-none" data-testid="day-weather">
+          {weatherReadout(weather)}
         </h1>
-        <p className="mt-1 text-lg text-ink-soft">{weather.tempF}°F</p>
         <p className="mt-3 text-base">
           Foot traffic looks <span className="font-semibold">{trafficWord(visitors).toLowerCase()}</span> — about {visitors} people
           might pass a stand open for 8 hours. Not all of them will buy.

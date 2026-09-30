@@ -27,8 +27,8 @@ export function totalQty(lots: Lot[]): number {
   return lots.reduce((sum, lot) => sum + lot.qty, 0)
 }
 
-export function addStock(inv: Inventory, item: ItemId, packQty: number, costCents: number): Inventory {
-  const lot: Lot = { qty: packQty * SCALE[item], costCents }
+export function addStock(inv: Inventory, item: ItemId, packQty: number, costCents: number, boughtDay?: number): Inventory {
+  const lot: Lot = { qty: packQty * SCALE[item], costCents, ...(boughtDay === undefined ? {} : { boughtDay }) }
   return { ...inv, [item]: [...inv[item], lot] }
 }
 
@@ -52,7 +52,7 @@ export function consume(lots: Lot[], qty: number): { lots: Lot[]; costCents: num
     costCents += allocated
     need -= take
     const leftQty = lot.qty - take
-    if (leftQty > 0) next.push({ qty: leftQty, costCents: lot.costCents - allocated })
+    if (leftQty > 0) next.push({ qty: leftQty, costCents: lot.costCents - allocated, boughtDay: lot.boughtDay })
   }
   if (need > 0) throw new Error('Inventory shortfall')
   return { lots: next, costCents }
@@ -109,6 +109,50 @@ export function estimateUnitCogsCents(inv: Inventory, recipe: Recipe): number | 
   return (cups.costCents + lemons.costCents + sugar.costCents + ice.costCents) / count
 }
 
+/** Lemons last 3 nights. Sugar lasts 10. Cups do not spoil. */
+export const SPOIL_NIGHTS = { lemons: 3, sugar: 10 } as const
+
+export interface SpoilResult {
+  inventory: Inventory
+  lemonsQty: number
+  lemonsCents: number
+  sugarQty: number
+  sugarCents: number
+}
+
+/**
+ * Drop produce whose shelf life ended before this morning.
+ * A lot bought on day N is still in the stand on the morning of day N+nights-1
+ * and gone on the morning of day N+nights.
+ */
+export function spoilProduce(inv: Inventory, morningDay: number): SpoilResult {
+  const lemons = splitFresh(inv.lemons, morningDay, SPOIL_NIGHTS.lemons)
+  const sugar = splitFresh(inv.sugar, morningDay, SPOIL_NIGHTS.sugar)
+  return {
+    inventory: { ...inv, lemons: lemons.fresh, sugar: sugar.fresh },
+    lemonsQty: lemons.qty,
+    lemonsCents: lemons.cents,
+    sugarQty: sugar.qty,
+    sugarCents: sugar.cents,
+  }
+}
+
+function splitFresh(lots: Lot[], morningDay: number, nights: number): { fresh: Lot[]; qty: number; cents: number } {
+  const fresh: Lot[] = []
+  let qty = 0
+  let cents = 0
+  for (const lot of lots) {
+    const bought = lot.boughtDay
+    if (typeof bought === 'number' && morningDay >= bought + nights) {
+      qty += lot.qty
+      cents += lot.costCents
+    } else {
+      fresh.push(lot)
+    }
+  }
+  return { fresh, qty, cents }
+}
+
 export function meltIce(inv: Inventory): { inventory: Inventory; meltQty: number; meltCents: number } {
   return {
     inventory: { ...inv, ice: [] },
@@ -124,13 +168,18 @@ export function cartCostCents(
   return cart.reduce((sum, line) => sum + line.packs * prices[line.item][line.packIndex], 0)
 }
 
-export function applyCart(inv: Inventory, cart: { item: ItemId; packIndex: number; packs: number }[], prices: DayPrices): Inventory {
+export function applyCart(
+  inv: Inventory,
+  cart: { item: ItemId; packIndex: number; packs: number }[],
+  prices: DayPrices,
+  boughtDay: number,
+): Inventory {
   let next = inv
   for (const line of cart) {
     const pack = CATALOG[line.item][line.packIndex]
     const price = prices[line.item][line.packIndex]
     for (let i = 0; i < line.packs; i += 1) {
-      next = addStock(next, line.item, pack.qty, price)
+      next = addStock(next, line.item, pack.qty, price, boughtDay)
     }
   }
   return next

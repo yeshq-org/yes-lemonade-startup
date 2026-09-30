@@ -10,8 +10,10 @@ interface GameApi {
 
 const GameContext = createContext<GameApi | null>(null)
 
-export function GameProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, null, loadGame)
+export function GameProvider({ children, initialState }: { children: ReactNode; initialState?: GameState | null }) {
+  const [state, dispatch] = useReducer(reducer, initialState, (boot: GameState | null | undefined) =>
+    boot === undefined ? loadGame() : boot,
+  )
   useEffect(() => {
     saveGame(state)
   }, [state])

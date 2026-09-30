@@ -1,22 +1,12 @@
 import { cupsFromInventory, displayCount, estimateUnitCogsCents, totalQty } from '../../game/inventory'
-import {
-  dayFees,
-  expectedVisitors,
-  fairPriceCents,
-  hourNote,
-  iceCaption,
-  iceComfort,
-  tasteCaption,
-  tasteScore,
-  trafficWord,
-} from '../../game/demand'
+import { dayFees, expectedVisitors, hourNote, trafficWord } from '../../game/demand'
 import { formatMoney, formatUnitCents } from '../../game/money'
 import { PRICE_MAX_CENTS, PRICE_MIN_CENTS, PITCHER_CUPS } from '../../game/constants'
 import { HOUR_CHOICES } from '../../game/types'
-import { weatherPhrase } from '../../game/weather'
+import { weatherReadout } from '../../game/weather'
 import { useGame } from '../../state/GameContext'
 import { Header } from '../Header'
-import { Button, Dock, Meter, Shell, Stepper, cx, useFocusHeading } from '../ui'
+import { Button, Dock, Shell, Stepper, cx, useFocusHeading } from '../ui'
 
 export function Recipe({ onTitle }: { onTitle: () => void }) {
   const { state, dispatch } = useGame()
@@ -25,11 +15,6 @@ export function Recipe({ onTitle }: { onTitle: () => void }) {
   const weather = state.forecast[state.day - 1]
   if (!weather) return null
   const recipe = state.recipe
-  const taste = tasteScore(recipe.lemons, recipe.sugar)
-  const comfort = iceComfort(recipe.ice, weather.heat)
-  const fair = fairPriceCents(weather, taste, comfort)
-  const low = Math.max(PRICE_MIN_CENTS, Math.round((fair * 0.85) / 5) * 5)
-  const high = Math.min(PRICE_MAX_CENTS, Math.max(low, Math.round((fair * 1.1) / 5) * 5))
   const ready = cupsFromInventory(state.inventory, recipe)
   const visitors = expectedVisitors(weather, state.hours, state.popularity)
   const unit = estimateUnitCogsCents(state.inventory, recipe)
@@ -42,7 +27,9 @@ export function Recipe({ onTitle }: { onTitle: () => void }) {
     <Shell>
       <Header onTitle={onTitle} />
       <main className="flex-1 px-4 pt-4">
-        <p className="text-sm font-bold tracking-[0.14em] text-teal">{weatherPhrase(weather).toUpperCase()}</p>
+        <p className="text-sm font-bold tracking-[0.14em] text-teal" data-testid="day-weather">
+          {weatherReadout(weather)}
+        </p>
         <h1 ref={heading} tabIndex={-1} className="mt-1 font-display text-4xl font-semibold outline-none">
           Build the cup
         </h1>
@@ -88,11 +75,7 @@ export function Recipe({ onTitle }: { onTitle: () => void }) {
             onInc={() => dispatch({ type: 'set-ice', value: recipe.ice + 1 })}
           />
         </div>
-        <div className="mt-4 space-y-4">
-          <Meter label="Taste" value={taste} caption={tasteCaption(taste)} />
-          <Meter label="Ice comfort" value={comfort} caption={iceCaption(comfort)} />
-        </div>
-        <section className="mt-5">
+        <section className="mt-5" data-testid="recipe">
           <div className="flex items-end justify-between gap-3">
             <h2 className="font-display text-2xl font-semibold">Price per cup</h2>
             <p className="font-display text-4xl font-semibold">{formatMoney(recipe.priceCents)}</p>
@@ -103,9 +86,6 @@ export function Recipe({ onTitle }: { onTitle: () => void }) {
             <PriceNudge label="+5¢" delta={5} />
             <PriceNudge label="+25¢" delta={25} />
           </div>
-          <p className="mt-2 text-sm text-ink-soft">
-            On a day like this, a happy customer might pay around {formatMoney(low)}–{formatMoney(high)}.
-          </p>
           {unit !== null && margin !== null && (
             <p className={cx('mt-2 text-sm font-semibold', margin < 10 && 'text-coral')}>
               About {formatUnitCents(unit)} of supplies in each cup. At this price you keep about {formatUnitCents(margin)} before the

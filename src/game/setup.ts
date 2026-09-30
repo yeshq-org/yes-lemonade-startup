@@ -1,7 +1,7 @@
 import { STARTING_CASH_CENTS, STARTING_POPULARITY } from './constants'
 import { emptyInventory } from './inventory'
 import { mulberry32 } from './rng'
-import type { GameState, Recipe, SeasonLength } from './types'
+import type { GameState, Keeper, Recipe, SeasonLength } from './types'
 import { rollPrices, rollWeather } from './weather'
 
 export const DEFAULT_RECIPE: Recipe = {
@@ -11,7 +11,7 @@ export const DEFAULT_RECIPE: Recipe = {
   priceCents: 150,
 }
 
-export function createGame(seasonDays: SeasonLength, seed: number): GameState {
+export function createGame(seasonDays: SeasonLength, seed: number, keeper: Keeper = 'girl'): GameState {
   const rng = mulberry32(seed)
   const forecast = []
   const priceBook = []
@@ -34,6 +34,7 @@ export function createGame(seasonDays: SeasonLength, seed: number): GameState {
     cart: [],
     recipe: { ...DEFAULT_RECIPE },
     hours: 8,
+    keeper,
     pending: null,
     reflections: ['', '', ''],
   }

@@ -1,13 +1,13 @@
 import { PRICE_MAX_CENTS, PRICE_MIN_CENTS } from '../game/constants'
-import { applyCart, cartCostCents, meltIce } from '../game/inventory'
+import { applyCart, cartCostCents, meltIce, spoilProduce } from '../game/inventory'
 import { simulateDay } from '../game/simulate'
 import { createGame } from '../game/setup'
-import type { CartLine, GameState, Hours, ItemId, SeasonLength } from '../game/types'
+import type { CartLine, GameState, Hours, ItemId, Keeper, SeasonLength } from '../game/types'
 import { HOUR_CHOICES } from '../game/types'
 import { clamp } from '../game/util'
 
 export type Action =
-  | { type: 'start'; seasonDays: SeasonLength; seed: number }
+  | { type: 'start'; seasonDays: SeasonLength; seed: number; keeper: Keeper }
   | { type: 'abandon' }
   | { type: 'ack-morning' }
   | { type: 'add-pack'; item: ItemId; packIndex: number }
@@ -42,7 +42,7 @@ function withLine(cart: CartLine[], item: ItemId, packIndex: number, delta: numb
 
 export function reducer(state: GameState | null, action: Action): GameState | null {
   if (action.type === 'abandon') return null
-  if (action.type === 'start') return createGame(action.seasonDays, action.seed)
+  if (action.type === 'start') return createGame(action.seasonDays, action.seed, action.keeper)
   if (!state) return state
 
   switch (action.type) {
@@ -76,7 +76,7 @@ export function reducer(state: GameState | null, action: Action): GameState | nu
       return {
         ...state,
         cashCents: state.cashCents - cost,
-        inventory: applyCart(state.inventory, state.cart, prices),
+        inventory: applyCart(state.inventory, state.cart, prices, state.day),
         cart: [],
         phase: 'recipe',
       }
@@ -128,10 +128,19 @@ export function reducer(state: GameState | null, action: Action): GameState | nu
     case 'advance': {
       if (state.phase !== 'report' || !state.pending) return state
       const melted = meltIce(state.inventory)
+      const nextMorning = state.day + 1
+      const spoiled =
+        state.day >= state.seasonDays
+          ? { inventory: melted.inventory, lemonsQty: 0, lemonsCents: 0, sugarQty: 0, sugarCents: 0 }
+          : spoilProduce(melted.inventory, nextMorning)
       const record = {
         ...state.pending,
         iceMeltQty: melted.meltQty,
         iceMeltCents: melted.meltCents,
+        spoilLemonsQty: spoiled.lemonsQty,
+        spoilLemonsCents: spoiled.lemonsCents,
+        spoilSugarQty: spoiled.sugarQty,
+        spoilSugarCents: spoiled.sugarCents,
       }
       const history = [...state.history, record]
       if (state.day >= state.seasonDays) {
@@ -139,7 +148,7 @@ export function reducer(state: GameState | null, action: Action): GameState | nu
       }
       return {
         ...state,
-        inventory: melted.inventory,
+        inventory: spoiled.inventory,
         history,
         pending: null,
         day: state.day + 1,

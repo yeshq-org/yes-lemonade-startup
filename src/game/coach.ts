@@ -1,4 +1,5 @@
 import { BUSINESS_QUESTION } from './constants'
+import { formatStock } from './inventory'
 import { formatMoney } from './money'
 import type { DayResult, Weather } from './types'
 import { weatherPhrase } from './weather'
@@ -10,25 +11,59 @@ export interface Brief {
   text: string
 }
 
+function overnightLoss(yesterday: DayResult): string | null {
+  const parts: string[] = []
+  if (yesterday.iceMeltCents > 0) {
+    parts.push(`${formatStock('ice', yesterday.iceMeltQty)} melted (${formatMoney(yesterday.iceMeltCents)})`)
+  }
+  if (yesterday.spoilLemonsCents > 0) {
+    parts.push(`${formatStock('lemons', yesterday.spoilLemonsQty)} went bad (${formatMoney(yesterday.spoilLemonsCents)})`)
+  }
+  if (yesterday.spoilSugarCents > 0) {
+    parts.push(`${formatStock('sugar', yesterday.spoilSugarQty)} went bad (${formatMoney(yesterday.spoilSugarCents)})`)
+  }
+  if (parts.length === 0) return null
+  const list = parts.length === 1 ? parts[0]! : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
+  return `Overnight, ${list}. That waste is not inside cost of goods. It still destroys value.`
+}
+
+/** What customers complained about, without naming a target recipe. */
+function recipeComplaint(yesterday: DayResult): string | null {
+  const { lemons, sugar, ice } = yesterday.recipe
+  if (sugar >= lemons + 3) return 'Customers said the cup was too sweet.'
+  if (lemons >= sugar + 3) return 'Customers said the cup was too sour.'
+  if (yesterday.taste < 55 && Math.min(lemons, sugar) <= 2) return 'Customers said the cup tasted watery.'
+  if (yesterday.iceComfort < 50 && (yesterday.weather.heat === 'hot' || yesterday.weather.heat === 'warm') && ice <= 2) {
+    return 'Customers said the cup was warm.'
+  }
+  if (yesterday.iceComfort < 50 && ice >= 6 && (yesterday.weather.heat === 'cold' || yesterday.weather.heat === 'cool')) {
+    return 'Customers said the ice watered the cup down.'
+  }
+  if (yesterday.taste < 55) return 'Customers said the recipe tasted off.'
+  return null
+}
+
 export function morningBrief(weather: Weather, yesterday: DayResult | null): Brief {
   if (!yesterday) {
     return {
       kicker: 'Mentor',
-      text: 'You have $20 and an empty stand. Buy what you can turn into cups, price above the supplies, and remember ice melts tonight. The score is what you earn per hour — not how busy the line looks.',
+      text: 'You have $20 and an empty stand. Buy what you can turn into cups, and price above the supplies. The score is what you earn per hour — not how busy the line looks.',
+    }
+  }
+
+  const loss = overnightLoss(yesterday)
+  if (loss) {
+    const complaint = recipeComplaint(yesterday)
+    return {
+      kicker: 'This morning',
+      text: complaint ? `${loss} ${complaint}` : loss,
     }
   }
 
   if (yesterday.hours === 0) {
     return {
       kicker: 'About yesterday',
-      text: 'Closing can be a smart call when the day is wrong. Ice you already bought still melted. Today, match the buy to the sky.',
-    }
-  }
-
-  if (yesterday.iceMeltCents >= 150) {
-    return {
-      kicker: 'About yesterday',
-      text: `${formatMoney(yesterday.iceMeltCents)} of ice melted overnight. Ice is a today-only supply. Buy for the crowd you expect, not the crowd you hope for.`,
+      text: 'Closing can be a smart call when the day is wrong. Today, match the buy to the sky.',
     }
   }
 
@@ -57,21 +92,9 @@ export function morningBrief(weather: Weather, yesterday: DayResult | null): Bri
     }
   }
 
-  if (yesterday.taste < 55) {
-    return {
-      kicker: 'About yesterday',
-      text: 'The pitcher fought the customers. Even lemons and sugar — around four and four — tastes like lemonade. Big swings taste like a dare.',
-    }
-  }
-
-  if (yesterday.iceComfort < 50) {
-    return {
-      kicker: 'About yesterday',
-      text:
-        weather.heat === 'hot' || weather.heat === 'warm'
-          ? 'A hot day wants a colder cup. Extra ice is comfort, and comfort is what lets you hold a higher price.'
-          : 'That much ice on a cool day is just a melting expense. Ease off the cubes when the sky is gentle.',
-    }
+  const complaint = recipeComplaint(yesterday)
+  if (complaint) {
+    return { kicker: 'About yesterday', text: complaint }
   }
 
   if (yesterday.recipe.priceCents > yesterday.fairPriceCents * 1.45 && yesterday.walkedAway > yesterday.sold) {
@@ -117,7 +140,7 @@ export function dayVerdict(day: DayResult): Verdict {
   if (day.hours === 0) {
     return {
       headline: 'You stayed closed',
-      answer: 'No hours means no hourly rate. Closing protects your time. It does not save ice you already paid for.',
+      answer: 'No hours means no hourly rate. Closing protects your time.',
     }
   }
   const hourly = day.earningsPerHourCents ?? 0
@@ -133,7 +156,7 @@ export function dayVerdict(day: DayResult): Verdict {
   if (hourly >= 350) {
     return {
       headline: 'Mostly. The stand paid you for real.',
-      answer: 'This is more than pocket change per hour. Before you scale it, check leftover ice and whether a longer day would dilute the rate.',
+      answer: 'This is more than pocket change per hour. Before you scale it, see whether a longer day would dilute the rate.',
     }
   }
   if (hourly >= 140) {
@@ -200,9 +223,6 @@ export function dayTip(day: DayResult): string {
   if (day.soldOutMissed >= 8) {
     return 'A sellout is not a perfect day. Every missed buyer is revenue that never entered the receipt.'
   }
-  if (day.iceMeltCents >= 100) {
-    return `Tonight's melt removes ${formatMoney(day.iceMeltCents)} of value that will not show up as cost of goods, because those cubes were never sold.`
-  }
   if (day.helperCents > 0 && day.sold >= day.cupsReady && day.cupsReady > 0) {
     return 'You sold every cup you could make. The longer shift added a helper wage and more hours under the same sales.'
   }
@@ -228,7 +248,7 @@ export const REFLECTIONS: { title: string; prompt: string }[] = [
   },
   {
     title: 'Quiet leaks',
-    prompt: 'Ice melts and helper wages never show up in a cups-sold score. Where did value quietly disappear?',
+    prompt: 'Some supplies left the stand without becoming a sale. Where did value quietly disappear?',
   },
   {
     title: 'Tomorrow morning',

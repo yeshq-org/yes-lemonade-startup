@@ -58,7 +58,7 @@ export function Selling({ onTitle }: { onTitle: () => void }) {
             ? 'The stand stays closed. People keep walking.'
             : 'Some people walk by. Some stop, drink, and tell you what the cup was like.'}
         </p>
-        <SidewalkDay result={result} cast={cast} elapsed={elapsed} reduced={reduced} />
+        <SidewalkDay result={result} cast={cast} elapsed={elapsed} reduced={reduced} keeper={state.keeper} />
         <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
           <Count label="Served" value={served} />
           <Count label="Walked" value={walked} />

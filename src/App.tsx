@@ -10,6 +10,7 @@ import { Shop } from './components/screens/Shop'
 import { Splash } from './components/screens/Splash'
 import { Button, Shell } from './components/ui'
 import { SAVE_KEY } from './game/storage'
+import type { Keeper } from './game/types'
 import { GameProvider, useGame } from './state/GameContext'
 
 type Gate = 'splash' | 'howto' | 'season' | 'play'
@@ -67,6 +68,7 @@ export default function App() {
 function Root() {
   const { state } = useGame()
   const [gate, setGate] = useState<Gate>('splash')
+  const [keeper, setKeeper] = useState<Keeper>('girl')
 
   useEffect(() => {
     if (!state && gate === 'play') setGate('splash')
@@ -83,10 +85,18 @@ function Root() {
 
   if (gate === 'howto') return <HowTo onDone={() => setGate('season')} />
   if (gate === 'season') {
-    return <Season onBack={() => setGate(state ? 'play' : 'splash')} onStart={() => setGate('play')} />
+    return <Season keeper={keeper} onBack={() => setGate(state ? 'play' : 'splash')} onStart={() => setGate('play')} />
   }
   if (gate !== 'play' || !state) {
-    return <Splash onStart={() => setGate('howto')} onContinue={() => setGate('play')} />
+    return (
+      <Splash
+        onStart={(choice) => {
+          setKeeper(choice)
+          setGate('howto')
+        }}
+        onContinue={() => setGate('play')}
+      />
+    )
   }
 
   const onTitle = () => setGate('splash')
@@ -102,8 +112,16 @@ function Root() {
     case 'report':
       return <Report onTitle={onTitle} />
     case 'career':
-      return <Career onTitle={onTitle} onNewSeason={() => setGate('season')} />
+      return <Career onTitle={onTitle} onNewSeason={() => setGate('splash')} />
     default:
-      return <Splash onStart={() => setGate('howto')} onContinue={() => setGate('play')} />
+      return (
+        <Splash
+          onStart={(choice) => {
+            setKeeper(choice)
+            setGate('howto')
+          }}
+          onContinue={() => setGate('play')}
+        />
+      )
   }
 }

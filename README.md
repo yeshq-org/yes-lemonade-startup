@@ -25,7 +25,7 @@ The game is a client-side React app. Progress is saved in `localStorage` under `
 
 1. Choose a **7, 14, or 30** day season.
 2. Each morning you get the weather and a short mentor note.
-3. Buy cups, lemons, sugar, and ice in packs. Prices shift a little every day. Ice melts overnight; everything else carries over.
+3. Buy cups, lemons, sugar, and ice in packs. Prices shift a little every day. Cups carry over. Lemons spoil after 3 nights, sugar after 10, and ice is gone every morning. The game does not warn about that until the stock is already gone.
 4. Set the recipe, the price, and how many hours you stay open. Longer than 8 hours hires a helper.
 5. Watch the street, then read the receipt.
 
@@ -37,7 +37,7 @@ TIME INVESTED
 YOUR ENTREPRENEUR EARNINGS: $X.XX / HOUR
 ```
 
-Cost of goods is the cost of supplies actually used in cups you sold (oldest purchases first). The stand fee and helper wage are other expenses. Buying inventory is not the same as an expense — until you sell it, or until ice melts.
+Cost of goods is the cost of supplies actually used in cups you sold (oldest purchases first). The stand fee and helper wage are other expenses. Buying inventory is not the same as an expense — until you sell it, ice melts, or lemons and sugar spoil. Melt and spoilage are lost value, not cost of goods.
 
 The season report shows the same chain for the whole run, plus net worth, best and worst days, badges, and three reflection prompts. Startup tiers are Side Hustle, Growing, Scalable, and Boss. They follow earnings per hour and whether the stand is worth more than the $20 you started with.
 

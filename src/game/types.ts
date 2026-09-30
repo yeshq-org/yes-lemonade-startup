@@ -15,7 +15,11 @@ export interface Weather {
 export interface Lot {
   qty: number
   costCents: number
+  /** Calendar day the pack was bought. Missing on old saves until they are loaded. */
+  boughtDay?: number
 }
+
+export type Keeper = 'guy' | 'girl'
 
 export interface Inventory {
   cups: Lot[]
@@ -72,6 +76,12 @@ export interface DayResult {
   popularityAfter: number
   iceMeltQty: number
   iceMeltCents: number
+  /** Lemons that spoiled overnight after this day. Not cost of goods. */
+  spoilLemonsQty: number
+  spoilLemonsCents: number
+  /** Sugar that spoiled overnight after this day. Not cost of goods. */
+  spoilSugarQty: number
+  spoilSugarCents: number
   fairPriceCents: number
   cupsReady: number
   /** Raw on-hand quantities after sales, before ice melts. */
@@ -94,6 +104,8 @@ export interface GameState {
   cart: CartLine[]
   recipe: Recipe
   hours: Hours
+  /** Who stands behind the counter for the whole season. */
+  keeper: Keeper
   pending: DayResult | null
   reflections: [string, string, string]
 }

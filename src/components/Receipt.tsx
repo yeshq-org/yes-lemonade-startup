@@ -14,6 +14,7 @@ export function Receipt({
   hours,
   hourlyCents,
   testId = 'receipt',
+  subtitleTestId,
 }: {
   title: string
   subtitle: string
@@ -27,6 +28,7 @@ export function Receipt({
   hours: number
   hourlyCents: number | null
   testId?: string
+  subtitleTestId?: string
 }) {
   const rows = [
     { label: 'REVENUE', cents: revenueCents, strong: false },
@@ -39,7 +41,9 @@ export function Receipt({
       <header className="mb-3 text-center">
         <p className="font-mono text-xs tracking-[0.18em] text-teal">Y.E.S. STAND</p>
         <h3 className="font-display text-2xl font-semibold">{title}</h3>
-        <p className="text-sm text-ink-soft">{subtitle}</p>
+        <p className="text-sm text-ink-soft" data-testid={subtitleTestId}>
+          {subtitle}
+        </p>
       </header>
       <table className="w-full border-collapse">
         <caption className="sr-only">Profit and loss</caption>

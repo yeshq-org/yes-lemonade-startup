@@ -21,11 +21,12 @@ function assertIdentity(day: GameState['history'][number]) {
 function assertBooks(state: GameState) {
   const summary = summarize(state)
   const melt = state.history.reduce((sum, day) => sum + day.iceMeltCents, 0)
+  const spoiled = state.history.reduce((sum, day) => sum + day.spoilLemonsCents + day.spoilSugarCents, 0)
   const net = state.history.reduce((sum, day) => sum + day.netCents, 0)
   expect(summary.totalNetCents).toBe(net)
   expect(summary.totalGrossCents).toBe(summary.totalRevenueCents - summary.totalCogsCents)
   expect(summary.netWorthCents).toBe(state.cashCents + inventoryValueCents(state.inventory))
-  expect(summary.netWorthCents).toBe(STARTING_CASH_CENTS + net - melt)
+  expect(summary.netWorthCents).toBe(STARTING_CASH_CENTS + net - melt - spoiled)
   for (const day of state.history) assertIdentity(day)
 }
 

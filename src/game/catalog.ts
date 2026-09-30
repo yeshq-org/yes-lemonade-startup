@@ -28,11 +28,11 @@ export const CATALOG: Record<ItemId, [Pack, Pack, Pack]> = {
   ],
 }
 
-export const ITEM_COPY: Record<ItemId, { name: string; keeps: string; unit: string }> = {
-  cups: { name: 'Cups', keeps: 'Leftovers keep', unit: 'cup' },
-  lemons: { name: 'Lemons', keeps: 'Leftovers keep', unit: 'lemon' },
-  sugar: { name: 'Sugar', keeps: 'Leftovers keep', unit: 'cup' },
-  ice: { name: 'Ice', keeps: 'Melts overnight', unit: 'cube' },
+export const ITEM_COPY: Record<ItemId, { name: string; unit: string }> = {
+  cups: { name: 'Cups', unit: 'cup' },
+  lemons: { name: 'Lemons', unit: 'lemon' },
+  sugar: { name: 'Sugar', unit: 'cup' },
+  ice: { name: 'Ice', unit: 'cube' },
 }
 
 export function packLabel(item: ItemId, qty: number): string {

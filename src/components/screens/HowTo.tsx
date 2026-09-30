@@ -20,8 +20,8 @@ const CARDS = [
   },
   {
     kind: 'ice' as const,
-    title: 'Ice does not keep',
-    body: 'Leftover lemons, sugar, and cups wait for tomorrow. Leftover ice melts overnight. Buy ice for today.',
+    title: 'Buy for the cups',
+    body: 'A cup needs a cup, lemons, sugar, and ice. What you buy comes out of the $20 before anyone shows up.',
   },
 ]
 

@@ -1,5 +1,5 @@
 import { randomSeed } from '../../game/rng'
-import type { SeasonLength } from '../../game/types'
+import type { Keeper, SeasonLength } from '../../game/types'
 import { useGame } from '../../state/GameContext'
 import { Button, Shell, useFocusHeading } from '../ui'
 
@@ -9,7 +9,7 @@ const OPTIONS: { days: SeasonLength; name: string; detail: string }[] = [
   { days: 30, name: '30 days', detail: 'A full season. Waste and price compound.' },
 ]
 
-export function Season({ onBack, onStart }: { onBack: () => void; onStart: () => void }) {
+export function Season({ keeper, onBack, onStart }: { keeper: Keeper; onBack: () => void; onStart: () => void }) {
   const { state, dispatch } = useGame()
   const heading = useFocusHeading()
   return (
@@ -32,7 +32,7 @@ export function Season({ onBack, onStart }: { onBack: () => void; onStart: () =>
               data-testid={`season-${option.days}`}
               className="w-full rounded-3xl bg-card p-4 text-left shadow-[0_0_0_1.5px_#eadcc6] transition active:translate-y-px"
               onClick={() => {
-                dispatch({ type: 'start', seasonDays: option.days, seed: randomSeed() })
+                dispatch({ type: 'start', seasonDays: option.days, seed: randomSeed(), keeper })
                 onStart()
               }}
             >

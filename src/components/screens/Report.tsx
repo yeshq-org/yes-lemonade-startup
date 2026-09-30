@@ -3,7 +3,7 @@ import { formatStock } from '../../game/inventory'
 import { formatMoney } from '../../game/money'
 import { chainFromDay } from '../../game/scoring'
 import { ITEM_IDS } from '../../game/types'
-import { weatherPhrase, weekdayName } from '../../game/weather'
+import { weatherReadout, weekdayName } from '../../game/weather'
 import { useGame } from '../../state/GameContext'
 import { Chain } from '../Chain'
 import { Header } from '../Header'
@@ -24,7 +24,7 @@ export function Report({ onTitle }: { onTitle: () => void }) {
       <main className="flex-1 space-y-5 px-4 pt-4">
         <div>
           <p className="text-sm font-bold tracking-[0.14em] text-teal">
-            {weekdayName(day.day).toUpperCase()} · {weatherPhrase(day.weather).toUpperCase()}
+            {weekdayName(day.day).toUpperCase()} · {weatherReadout(day.weather)}
           </p>
           <h1 ref={heading} tabIndex={-1} className="mt-2 font-display text-3xl leading-tight font-semibold outline-none">
             {BUSINESS_QUESTION}
@@ -34,7 +34,8 @@ export function Report({ onTitle }: { onTitle: () => void }) {
         </div>
         <Receipt
           title={`Day ${day.day}`}
-          subtitle={weatherPhrase(day.weather)}
+          subtitle={weatherReadout(day.weather)}
+          subtitleTestId="day-weather"
           revenueCents={day.revenueCents}
           cogsCents={day.cogsCents}
           grossCents={day.grossCents}
@@ -74,11 +75,6 @@ export function Report({ onTitle }: { onTitle: () => void }) {
             ))}
           </ul>
           <p className="mt-3 text-sm">Supplies on hand are worth {formatMoney(day.suppliesValueCents)} at what you paid.</p>
-          <p className="mt-2 font-semibold">
-            {day.iceMeltQty === 0
-              ? 'No ice left to melt tonight.'
-              : `Overnight, ${formatStock('ice', day.iceMeltQty)} ${day.iceMeltQty === 1 ? 'disappears' : 'disappear'} and take ${formatMoney(day.iceMeltCents)} with them. That waste is not inside cost of goods. It still destroys value.`}
-          </p>
         </Card>
         <Card>
           <p className="text-xs font-bold tracking-[0.14em] text-teal">MENTOR</p>
