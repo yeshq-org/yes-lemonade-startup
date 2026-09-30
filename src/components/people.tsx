@@ -237,20 +237,20 @@ const SELLER = {
   guy: { tone: '#c68642', shade: '#a56a30', lip: '#8d4a3c', iris: '#3a2414', hair: '#1c1915', style: 0 },
 } as const
 
-/** Seller from the chest up, behind the counter. Legs stay behind the stand's front cover. */
+/** Chest-up seller. The stand's front panel covers everything below the counter. */
 export function StandingSeller({ keeper, offering }: { keeper: Keeper; offering: boolean }) {
   const look = SELLER[keeper]
   const shirt = keeper === 'girl' ? '#efe6d2' : '#31425c'
   return (
     <g data-testid="stand-keeper" data-keeper={keeper}>
-      <path d="M58 66 h52 l6 32 h-64 z" fill={shirt} />
-      <path d="M72 76 h28 v16 h-28 z" fill="#0e5e59" />
-      <path d="M78 62 h12 v8 h-12 z" fill={look.tone} />
+      <path d="M62 58 h48 l4 28 h-56 z" fill={shirt} />
+      <path d="M74 68 h24 v14 h-24 z" fill="#0e5e59" />
+      <path d="M80 54 h12 v8 h-12 z" fill={look.tone} />
       {offering ? (
         <g data-testid="keeper-offer">
-          <path d="M108 74 q28 -2 48 6" stroke={shirt} strokeWidth="8" strokeLinecap="round" fill="none" />
-          <path d="M154 80 q12 2 16 2" stroke={look.tone} strokeWidth="6" strokeLinecap="round" fill="none" />
-          <g transform="translate(174 76)">
+          <path d="M108 66 q30 0 52 8" stroke={shirt} strokeWidth="8" strokeLinecap="round" fill="none" />
+          <path d="M158 74 q10 2 14 2" stroke={look.tone} strokeWidth="6" strokeLinecap="round" fill="none" />
+          <g transform="translate(176 70)">
             <path d="M-6 0 h13 l-1.5 11 h-10 z" fill="#ffe14a" stroke="#c98400" strokeWidth="0.9" />
             <ellipse cx="0.5" cy="0" rx="6.5" ry="2" fill="#fff6c2" />
             <ellipse cx="1" cy="6" rx="3.6" ry="2.4" fill={look.tone} />
@@ -258,16 +258,16 @@ export function StandingSeller({ keeper, offering }: { keeper: Keeper; offering:
         </g>
       ) : (
         <g>
-          <path d="M58 78 q-8 10 -4 16" stroke={shirt} strokeWidth="7" strokeLinecap="round" fill="none" />
-          <path d="M110 78 q8 10 4 16" stroke={shirt} strokeWidth="7" strokeLinecap="round" fill="none" />
-          <ellipse cx="54" cy="96" rx="5" ry="3" fill={look.tone} />
-          <ellipse cx="114" cy="96" rx="5" ry="3" fill={look.tone} />
+          <path d="M62 70 q-8 8 -4 14" stroke={shirt} strokeWidth="7" strokeLinecap="round" fill="none" />
+          <path d="M110 70 q8 8 4 14" stroke={shirt} strokeWidth="7" strokeLinecap="round" fill="none" />
+          <ellipse cx="58" cy="86" rx="5" ry="3" fill={look.tone} />
+          <ellipse cx="114" cy="86" rx="5" ry="3" fill={look.tone} />
         </g>
       )}
       <IllustratedHead
-        cx={84}
-        cy={42}
-        scale={0.86}
+        cx={86}
+        cy={36}
+        scale={0.84}
         skin={look.tone}
         shade={look.shade}
         lip={look.lip}

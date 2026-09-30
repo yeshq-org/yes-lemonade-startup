@@ -122,7 +122,7 @@ export function SidewalkDay({
           <p
             data-testid="customer-comment"
             aria-live="polite"
-            className="pop-in absolute top-[118px] right-2 z-30 max-w-[11rem] rounded-2xl bg-white px-2.5 py-1.5 text-[13px] leading-snug font-semibold text-ink shadow-[0_8px_20px_rgba(28,25,21,0.12)]"
+            className="pop-in absolute top-[150px] right-2 z-40 max-w-[11rem] rounded-2xl bg-white px-2.5 py-1.5 text-[13px] leading-snug font-semibold text-ink shadow-[0_8px_20px_rgba(28,25,21,0.12)]"
           >
             {speaker.comment}
           </p>
@@ -186,28 +186,28 @@ function LemonadeStand({ price, closed, keeper, offering }: { price: string; clo
   return (
     <svg
       data-testid="lemonade-stand"
-      viewBox="0 0 230 200"
-      className="absolute bottom-[6px] left-0 z-10 h-[158px] w-[182px]"
+      viewBox="0 0 220 200"
+      className="absolute bottom-[6px] left-0 z-30 h-[160px] w-[176px]"
       aria-hidden="true"
     >
-      <path d="M12 0 h206 v16 H12 z" fill="#fff6e8" />
+      <path d="M8 0 h204 v14 H8 z" fill="#fff6e8" />
       {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((stripe) => (
-        <rect key={stripe} x={12 + stripe * 23} y="0" width="12" height="16" fill="#0e5e59" />
+        <rect key={stripe} x={8 + stripe * 22.6} y="0" width="12" height="14" fill="#0e5e59" />
       ))}
-      <path d="M12 16 q16 8 32 0 q16 8 32 0 q16 8 32 0 q16 8 32 0 q16 8 32 0 q16 8 32 0 v5 H12 z" fill="#0e5e59" />
-      <text x="115" y="12" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="11" fontWeight="700" fill="#fffdfb">
+      <path d="M8 14 q15 7 30 0 q15 7 30 0 q15 7 30 0 q15 7 30 0 q15 7 30 0 q15 7 30 0 v4 H8 z" fill="#0e5e59" />
+      <text x="110" y="11" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="11" fontWeight="700" fill="#fffdfb">
         LEMONADE
       </text>
       <StandingSeller keeper={keeper} offering={offering} />
-      <rect x="16" y="96" width="198" height="104" rx="3" fill="#c9854a" />
-      <rect x="16" y="96" width="10" height="104" fill="#8d5a34" />
-      <rect x="204" y="96" width="10" height="104" fill="#8d5a34" />
-      <path d="M82 108 v84 M148 108 v84" stroke="#b07a40" strokeWidth="3" />
-      <rect x="12" y="84" width="206" height="16" rx="4" fill="#e0a56a" />
-      <rect x="12" y="96" width="206" height="10" fill="#a86b38" />
-      <rect x="24" y="88" width="24" height="12" rx="2" fill="#fff6d2" stroke="#e2a800" />
-      <rect x="158" y="88" width="48" height="16" rx="4" fill="#ffe14a" />
-      <text x="182" y="100" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="12" fontWeight="700" fill="#1c1915">
+      <rect x="14" y="86" width="192" height="114" fill="#c9854a" />
+      <rect x="14" y="86" width="10" height="114" fill="#8d5a34" />
+      <rect x="196" y="86" width="10" height="114" fill="#8d5a34" />
+      <path d="M78 98 V192 M142 98 V192" stroke="#a86b38" strokeWidth="3" />
+      <rect x="10" y="74" width="200" height="16" rx="3" fill="#e0a56a" />
+      <rect x="10" y="86" width="200" height="10" fill="#a86b38" />
+      <rect x="22" y="78" width="22" height="12" rx="2" fill="#fff6d2" stroke="#e2a800" />
+      <rect x="150" y="78" width="48" height="16" rx="4" fill="#ffe14a" />
+      <text x="174" y="90" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="12" fontWeight="700" fill="#1c1915">
         {price}
       </text>
       {closed && (
