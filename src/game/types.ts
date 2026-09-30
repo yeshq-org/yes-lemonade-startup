@@ -141,4 +141,3 @@ export interface GameState {
 }
 
 export const ITEM_IDS: ItemId[] = ['cups', 'lemons', 'sugar', 'ice']
-export const HOUR_CHOICES: Hours[] = [0, 4, 6, 8, 10, 12]

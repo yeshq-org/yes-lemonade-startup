@@ -93,7 +93,7 @@ export function Receipt({
           <p className="text-xs font-bold tracking-[0.14em]">YOUR ENTREPRENEUR EARNINGS</p>
           <p className="font-display text-4xl leading-tight font-semibold">{formatHourly(hourlyCents)}</p>
         </div>
-        <p className="mt-2 text-center text-sm text-ink-soft">Net profit ÷ hours you chose to work.</p>
+        <p className="mt-2 text-center text-sm text-ink-soft">Net profit ÷ the hours the stand was open.</p>
       </div>
     </article>
   )

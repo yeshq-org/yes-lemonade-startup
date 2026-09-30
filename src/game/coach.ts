@@ -238,7 +238,7 @@ export function dayTip(day: DayResult): string {
   if (day.grossCents < 0) {
     return 'Gross profit is negative when the cup sells for less than the supplies inside it. The stand fee has not even been counted yet.'
   }
-  return 'Read the receipt top to bottom. The hourly stamp is net profit divided by the hours you chose.'
+  return 'Read the receipt top to bottom. The hourly stamp is net profit divided by the 8 hours the stand was open.'
 }
 
 export const REFLECTIONS: { title: string; prompt: string }[] = [

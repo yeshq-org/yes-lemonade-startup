@@ -1,3 +1,6 @@
+/** Every sales day is open for this many hours. Players do not choose it. */
+export const DAY_HOURS = 8
+
 export const STARTING_CASH_CENTS = 2000
 export const STARTING_POPULARITY = 40
 export const PITCHER_CUPS = 12

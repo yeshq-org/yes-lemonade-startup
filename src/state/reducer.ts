@@ -1,12 +1,11 @@
 import { settleCrowd } from '../game/crowd'
-import { PRICE_MAX_CENTS, PRICE_MIN_CENTS } from '../game/constants'
+import { DAY_HOURS, PRICE_MAX_CENTS, PRICE_MIN_CENTS } from '../game/constants'
 import { dayFees } from '../game/demand'
 import { applyCart, cartCostCents, cloneInventory, meltIce, spoilProduce } from '../game/inventory'
 import { simulateDay } from '../game/simulate'
 import { createGame } from '../game/setup'
 import { planCrowd, reviseCrowd } from '../game/sidewalk'
-import type { CartLine, GameState, Hours, ItemId, Keeper, SeasonLength } from '../game/types'
-import { HOUR_CHOICES } from '../game/types'
+import type { CartLine, GameState, ItemId, Keeper, SeasonLength } from '../game/types'
 import { clamp } from '../game/util'
 
 export type Action =
@@ -22,7 +21,6 @@ export type Action =
   | { type: 'set-sugar'; value: number }
   | { type: 'set-ice'; value: number }
   | { type: 'set-price'; cents: number; at?: number }
-  | { type: 'set-hours'; hours: Hours }
   | { type: 'open' }
   | { type: 'to-report' }
   | { type: 'advance' }
@@ -109,9 +107,6 @@ export function reducer(state: GameState | null, action: Action): GameState | nu
         popularity: settled.result.popularityAfter,
       }
     }
-    case 'set-hours':
-      if (!HOUR_CHOICES.includes(action.hours)) return state
-      return { ...state, hours: action.hours }
     case 'open': {
       if (state.phase !== 'recipe') return state
       const weather = state.forecast[state.day - 1]
@@ -123,14 +118,15 @@ export function reducer(state: GameState | null, action: Action): GameState | nu
         weather,
         inventory: state.inventory,
         recipe: state.recipe,
-        hours: state.hours,
+        hours: DAY_HOURS,
         popularity: state.popularity,
         previousSatisfaction: previous?.satisfaction ?? null,
       })
-      const fees = dayFees(state.hours)
+      const fees = dayFees(DAY_HOURS)
       const cashAfterFeesCents = state.cashCents - fees.standFeeCents - fees.helperCents
       return {
         ...state,
+        hours: DAY_HOURS,
         inventory: played.inventory,
         cashCents: cashAfterFeesCents + played.result.revenueCents,
         popularity: played.popularity,

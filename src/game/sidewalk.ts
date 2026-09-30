@@ -230,7 +230,7 @@ export function crowdProgress(people: Pedestrian[], time: number): number {
   return Math.min(1, (shown - 1 + along) / marks.length)
 }
 
-/** Clock label for the sidewalk. Always the 9:00am–5:00pm day, whatever hours were chosen. */
+/** Clock label for the sidewalk. The fixed 8-hour day, shown from 9:00am to 5:00pm. */
 export function sidewalkClock(progress: number): string {
   const minute = OPEN_MINUTE + Math.round(Math.min(1, Math.max(0, progress)) * (CLOSE_MINUTE - OPEN_MINUTE))
   const hour24 = Math.floor(minute / 60)

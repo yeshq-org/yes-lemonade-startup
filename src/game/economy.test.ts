@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { CATALOG } from './catalog'
-import { PRICE_MAX_CENTS, PRICE_MIN_CENTS, STARTING_CASH_CENTS } from './constants'
+import { DAY_HOURS, PRICE_MAX_CENTS, PRICE_MIN_CENTS, STARTING_CASH_CENTS } from './constants'
 import { IDEAL_ICE, buyRate, dayFees, expectedVisitors, fairPriceCents, iceComfort, tasteScore } from './demand'
 import { addStock, consume, cupsFromInventory, emptyInventory, inventoryValueCents } from './inventory'
 import { createGame } from './setup'
 import { simulateDay } from './simulate'
 import { summarize } from './scoring'
 import { reducer } from '../state/reducer'
-import type { GameState, Hours, ItemId } from './types'
+import type { GameState, ItemId } from './types'
 
 function assertIdentity(day: GameState['history'][number]) {
   expect(day.grossCents).toBe(day.revenueCents - day.cogsCents)
@@ -83,13 +83,11 @@ function finish(seed: number, style: 'smart' | 'naive' | 'closed'): GameState {
     state = reducer(state, { type: 'ack-morning' })!
     if (style === 'closed') {
       state = reducer(state, { type: 'checkout' })!
-      state = reducer(state, { type: 'set-hours', hours: 0 })!
     } else if (style === 'naive') {
       state = reducer(state, { type: 'set-lemons', value: 4 })!
       state = reducer(state, { type: 'set-sugar', value: 4 })!
       state = reducer(state, { type: 'set-ice', value: 4 })!
       state = reducer(state, { type: 'set-price', cents: PRICE_MIN_CENTS })!
-      state = reducer(state, { type: 'set-hours', hours: 8 })!
       for (const item of ['cups', 'lemons', 'sugar', 'ice'] as const) {
         state = reducer(state, { type: 'add-pack', item, packIndex: 0 })!
       }
@@ -99,13 +97,12 @@ function finish(seed: number, style: 'smart' | 'naive' | 'closed'): GameState {
       const taste = tasteScore(4, 4)
       const comfort = iceComfort(ice, weather.heat)
       const fair = fairPriceCents(weather, taste, comfort)
-      const hours: Hours = weather.heat === 'cold' && weather.sky === 'rain' ? 4 : weather.heat === 'cold' ? 6 : 8
+      const hours = DAY_HOURS
       const price = Math.min(PRICE_MAX_CENTS, Math.max(PRICE_MIN_CENTS, Math.round((fair * 0.92) / 5) * 5))
       state = reducer(state, { type: 'set-lemons', value: 4 })!
       state = reducer(state, { type: 'set-sugar', value: 4 })!
       state = reducer(state, { type: 'set-ice', value: ice })!
       state = reducer(state, { type: 'set-price', cents: price })!
-      state = reducer(state, { type: 'set-hours', hours })!
       const expectedBuyers = Math.max(
         4,
         Math.ceil(expectedVisitors(weather, hours, state.popularity) * buyRate(price, fair, taste)),
@@ -207,21 +204,23 @@ describe('demand shape', () => {
 })
 
 describe('season', () => {
-  it('keeps a closed week penny-perfect and melts ice', () => {
+  it('opens an 8-hour day, charges the stand fee, and melts unsold ice', () => {
     let state = createGame(7, 4)
     state = reducer(state, { type: 'ack-morning' })!
     state = reducer(state, { type: 'add-pack', item: 'ice', packIndex: 0 })!
     const iceCost = state.priceBook[0]!.ice[0]
     state = reducer(state, { type: 'checkout' })!
-    state = reducer(state, { type: 'set-hours', hours: 0 })!
     state = reducer(state, { type: 'open' })!
-    expect(state.pending?.earningsPerHourCents).toBeNull()
-    expect(state.pending?.netCents).toBe(0)
+    expect(state.pending?.hours).toBe(DAY_HOURS)
+    expect(state.pending?.standFeeCents).toBe(150)
+    expect(state.pending?.helperCents).toBe(0)
+    expect(state.pending?.netCents).toBe(-150)
+    expect(state.pending?.earningsPerHourCents).toBe(-19)
     expect(state.pending?.iceMeltCents).toBe(iceCost)
     state = reducer(state, { type: 'to-report' })!
     state = reducer(state, { type: 'advance' })!
     expect(state.inventory.ice).toEqual([])
-    expect(state.cashCents).toBe(STARTING_CASH_CENTS - iceCost)
+    expect(state.cashCents).toBe(STARTING_CASH_CENTS - iceCost - 150)
     assertBooks(state)
   })
 

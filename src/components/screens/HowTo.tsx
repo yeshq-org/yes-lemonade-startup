@@ -16,7 +16,7 @@ const CARDS = [
   {
     kind: 'time' as const,
     title: 'Time is a cost',
-    body: 'Hours open bring customers, and they count as time invested. The score that matters is what you earn per hour.',
+    body: 'The stand is open 8 hours, from 9:00am to 5:00pm. Those hours count as time invested. The score that matters is what you earn per hour.',
   },
   {
     kind: 'ice' as const,

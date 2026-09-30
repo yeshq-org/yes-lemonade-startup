@@ -145,9 +145,3 @@ export function dayFees(hours: Hours): { standFeeCents: number; helperCents: num
   return { standFeeCents, helperCents }
 }
 
-export function hourNote(hours: Hours): string {
-  const fees = dayFees(hours)
-  if (hours === 0) return 'No fee. No customers.'
-  const helper = fees.helperCents > 0 ? ` + ${fees.helperCents / 100} helper` : ''
-  return `Stand fee $${(fees.standFeeCents / 100).toFixed(2)}${helper}`
-}

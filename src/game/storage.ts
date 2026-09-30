@@ -1,3 +1,4 @@
+import { DAY_HOURS } from './constants'
 import type { Arrival, DayShelf, GameState, Inventory, Keeper, Lot, SeasonLength } from './types'
 
 export const SAVE_KEY = 'yes-lemonade-startup-v1'
@@ -24,6 +25,7 @@ export function normalizeSave(value: unknown): GameState | null {
   const keeper: Keeper = value.keeper === 'guy' ? 'guy' : 'girl'
   return {
     ...value,
+    hours: DAY_HOURS,
     keeper,
     inventory: stampPurchaseDay(value.inventory, value.day),
     shelf: normalizeShelf(value.shelf, value.day),

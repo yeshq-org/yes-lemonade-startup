@@ -1,8 +1,7 @@
 import { cupsFromInventory, displayCount, estimateUnitCogsCents, totalQty } from '../../game/inventory'
-import { dayFees, expectedVisitors, hourNote, trafficWord } from '../../game/demand'
+import { dayFees, expectedVisitors, trafficWord } from '../../game/demand'
 import { formatMoney, formatUnitCents } from '../../game/money'
-import { PRICE_MAX_CENTS, PRICE_MIN_CENTS, PITCHER_CUPS } from '../../game/constants'
-import { HOUR_CHOICES } from '../../game/types'
+import { DAY_HOURS, PRICE_MAX_CENTS, PRICE_MIN_CENTS, PITCHER_CUPS } from '../../game/constants'
 import { weatherReadout } from '../../game/weather'
 import { useGame } from '../../state/GameContext'
 import { Header } from '../Header'
@@ -16,12 +15,12 @@ export function Recipe({ onTitle }: { onTitle: () => void }) {
   if (!weather) return null
   const recipe = state.recipe
   const ready = cupsFromInventory(state.inventory, recipe)
-  const visitors = expectedVisitors(weather, state.hours, state.popularity)
+  const visitors = expectedVisitors(weather, DAY_HOURS, state.popularity)
   const unit = estimateUnitCogsCents(state.inventory, recipe)
   const margin = unit === null ? null : recipe.priceCents - unit
-  const fees = dayFees(state.hours)
-  const shortStock = ready < visitors * 0.7 && state.hours > 0
-  const brokeOpen = ready === 0 && state.hours > 0
+  const fees = dayFees(DAY_HOURS)
+  const shortStock = ready < visitors * 0.7
+  const brokeOpen = ready === 0
 
   return (
     <Shell>
@@ -94,50 +93,25 @@ export function Recipe({ onTitle }: { onTitle: () => void }) {
           )}
           {ready === 0 && <p className="mt-2 text-sm text-ink-soft">Buy supplies or ease the recipe before this price can matter.</p>}
         </section>
-        <fieldset className="mt-5">
-          <legend className="font-display text-2xl font-semibold">Hours open</legend>
-          <p className="mt-1 text-sm text-ink-soft">Longer days can mean more customers, a helper wage, and a lower rate per hour.</p>
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            {HOUR_CHOICES.map((hours) => (
-              <label
-                key={hours}
-                className={cx(
-                  'flex min-h-16 cursor-pointer flex-col items-center justify-center rounded-2xl px-2 py-2 text-center',
-                  state.hours === hours ? 'bg-ink text-cream' : 'bg-card text-ink shadow-[0_0_0_1.5px_#eadcc6]',
-                )}
-              >
-                <input
-                  type="radio"
-                  className="sr-only"
-                  name="hours"
-                  checked={state.hours === hours}
-                  onChange={() => dispatch({ type: 'set-hours', hours })}
-                />
-                <span className="text-lg font-bold">{hours === 0 ? 'Closed' : `${hours}h`}</span>
-              </label>
-            ))}
-          </div>
-          <p className="mt-2 text-sm text-ink-soft">{hourNote(state.hours)}</p>
-        </fieldset>
         <p className="mt-4 text-base">
-          Crowd if you open {state.hours === 0 ? 'zero hours' : `${state.hours} hours`}:{' '}
-          <span className="font-semibold">{state.hours === 0 ? 'Nobody' : trafficWord(visitors)}</span>
-          {state.hours > 0 && ` · about ${visitors} passersby`}.
+          The stand is open {DAY_HOURS} hours, 9:00am to 5:00pm. Crowd:{' '}
+          <span className="font-semibold">{trafficWord(visitors)}</span>
+          {` · about ${visitors} passersby`}. Opening charges {formatMoney(fees.standFeeCents)}.
         </p>
         {shortStock && !brokeOpen && (
           <p className="mt-2 text-sm font-semibold text-coral">
-            You can only make {ready} cups. A longer day will not serve people you cannot pour for.
+            You can only make {ready} cups. The day will not serve people you cannot pour for.
           </p>
         )}
         {brokeOpen && (
           <p className="mt-2 text-sm font-semibold text-coral">
-            You cannot make a cup. Opening still charges {formatMoney(fees.standFeeCents + fees.helperCents)} and counts the hours.
+            You cannot make a cup. Opening still charges {formatMoney(fees.standFeeCents)} for the {DAY_HOURS} hours.
           </p>
         )}
       </main>
       <Dock>
         <Button data-testid="open-stand" onClick={() => dispatch({ type: 'open' })}>
-          {state.hours === 0 ? 'Stay closed today' : brokeOpen ? 'Open anyway' : 'Open the stand'}
+          {brokeOpen ? 'Open anyway' : 'Open the stand'}
         </Button>
         <Button variant="ghost" className="mt-1" onClick={() => dispatch({ type: 'to-shop' })}>
           Back to supplies

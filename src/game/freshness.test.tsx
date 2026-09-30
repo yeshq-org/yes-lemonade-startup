@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { DAY_HOURS } from './constants'
+import { roundHalfAway } from './money'
+import { simulateDay } from './simulate'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { Recipe } from '../components/screens/Recipe'
 import { Report } from '../components/screens/Report'
@@ -46,7 +49,6 @@ describe('spoilage', () => {
     const sugarCost = state.priceBook[0]!.sugar[0]!
     state = reducer(state, { type: 'checkout' })!
     expect(state.inventory.lemons[0]?.boughtDay).toBe(1)
-    state = reducer(state, { type: 'set-hours', hours: 0 })!
     state = reducer(state, { type: 'open' })!
     state = reducer(state, { type: 'to-report' })!
     expect(state.pending?.spoilLemonsCents).toBe(0)
@@ -104,6 +106,9 @@ describe('recipe screen', () => {
     expect(html).toContain('Ice / cup')
     expect(html).toContain('°C /')
     expect(html).toContain('°F')
+    expect(html).not.toMatch(/Hours open/)
+    expect(html).not.toMatch(/Stay closed/)
+    expect(html).not.toContain('name="hours"')
   })
 
   it('does not preview overnight melt on the receipt', () => {
@@ -111,7 +116,6 @@ describe('recipe screen', () => {
     state = reducer(state, { type: 'ack-morning' })!
     state = reducer(state, { type: 'add-pack', item: 'ice', packIndex: 0 })!
     state = reducer(state, { type: 'checkout' })!
-    state = reducer(state, { type: 'set-hours', hours: 0 })!
     state = reducer(state, { type: 'open' })!
     state = reducer(state, { type: 'to-report' })!
     expect(state.pending?.iceMeltCents).toBeGreaterThan(0)
@@ -130,8 +134,62 @@ describe('recipe screen', () => {
 function closeDay(state: NonNullable<ReturnType<typeof reducer>>): NonNullable<ReturnType<typeof reducer>> {
   let next = reducer(state, { type: 'ack-morning' })!
   next = reducer(next, { type: 'checkout' })!
-  next = reducer(next, { type: 'set-hours', hours: 0 })!
   next = reducer(next, { type: 'open' })!
   next = reducer(next, { type: 'to-report' })!
   return reducer(next, { type: 'advance' })!
 }
+
+describe('fixed 8-hour day', () => {
+  it('plays a saved non-8-hour choice as 8 hours from the next day onward', () => {
+    const game = createGame(7, 9, 'guy')
+    const prior = simulateDay({
+      day: 1,
+      seed: game.seed,
+      weather: game.forecast[0]!,
+      inventory: game.inventory,
+      recipe: game.recipe,
+      hours: 12,
+      popularity: game.popularity,
+      previousSatisfaction: null,
+    }).result
+    const saved = {
+      ...game,
+      day: 2,
+      phase: 'recipe' as const,
+      hours: 4 as const,
+      cashCents: 1234,
+      recipe: { ...game.recipe, priceCents: 175 },
+      history: [prior],
+    }
+    const loaded = normalizeSave(saved)
+    expect(loaded?.hours).toBe(DAY_HOURS)
+    expect(loaded?.history[0]?.hours).toBe(12)
+    expect(loaded?.cashCents).toBe(1234)
+    expect(loaded?.recipe.priceCents).toBe(175)
+    expect(loaded?.keeper).toBe('guy')
+    expect(loaded?.forecast).toEqual(game.forecast)
+    expect(loaded?.priceBook).toEqual(game.priceBook)
+    const opened = reducer(loaded, { type: 'open' })!
+    expect(opened.pending?.hours).toBe(8)
+    expect(opened.pending?.standFeeCents).toBe(150)
+    expect(opened.pending?.helperCents).toBe(0)
+    expect(opened.pending?.netCents).toBe(-150)
+    expect(opened.pending?.earningsPerHourCents).toBe(roundHalfAway(-150 / 8))
+    expect(opened.history[0]?.hours).toBe(12)
+    expect(opened.cashCents).toBe(1234 - 150)
+
+    const midDay = normalizeSave({
+      ...game,
+      phase: 'selling',
+      hours: 6,
+      cashCents: 1500,
+      pending: { ...prior, hours: 6 as const },
+      history: [prior],
+    })
+    expect(midDay?.hours).toBe(8)
+    expect(midDay?.pending?.hours).toBe(6)
+    expect(midDay?.cashCents).toBe(1500)
+    expect(midDay?.keeper).toBe('guy')
+    expect(midDay?.history[0]?.hours).toBe(12)
+  })
+})
