@@ -175,7 +175,7 @@ function Person({
       data-pose={pose}
       data-cup={cup ? 'yes' : 'no'}
       className="absolute z-20 w-[66px]"
-      style={{ left: x, bottom: 8, transform: `translateY(${bob}px)` }}
+      style={{ left: x, bottom: 0, transform: `translateY(${bob}px)` }}
     >
       <PersonFigure look={look} hair={person.look % 6} pose={pose} step={step} cup={cup} reach={reach} />
     </div>
@@ -187,7 +187,7 @@ function LemonadeStand({ price, closed, keeper, offering }: { price: string; clo
     <svg
       data-testid="lemonade-stand"
       viewBox="0 0 220 215"
-      className="absolute bottom-0 left-0 z-10 h-[172px] w-[176px]"
+      className="absolute bottom-8 left-0 z-10 h-[172px] w-[176px]"
       aria-hidden="true"
     >
       <path d="M8 0 h204 v16 H8 z" fill="#fff6e8" />
