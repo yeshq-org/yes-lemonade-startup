@@ -27,7 +27,7 @@ export function Recipe({ onTitle }: { onTitle: () => void }) {
     <Shell>
       <Header onTitle={onTitle} />
       <main className="flex-1 px-4 pt-4">
-        <p className="text-sm font-bold tracking-[0.14em] text-teal" data-testid="day-weather">
+        <p className="text-lg font-semibold" data-testid="day-weather">
           {weatherReadout(weather)}
         </p>
         <h1 ref={heading} tabIndex={-1} className="mt-1 font-display text-4xl font-semibold outline-none">

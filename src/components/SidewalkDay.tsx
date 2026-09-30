@@ -233,38 +233,39 @@ function LemonadeStand({ price, closed, keeper }: { price: string; closed: boole
   return (
     <svg
       data-testid="lemonade-stand"
-      viewBox="0 0 168 158"
-      className="absolute bottom-[34px] left-2 z-10 h-[158px] w-[168px]"
+      viewBox="0 0 168 168"
+      className="absolute bottom-[28px] left-1 z-10 h-[196px] w-[188px]"
       aria-hidden="true"
     >
-      <rect x="22" y="58" width="7" height="78" rx="2" fill="#8d5a34" />
-      <rect x="128" y="58" width="7" height="78" rx="2" fill="#8d5a34" />
-      <path d="M10 52 h142 v16 H10 z" fill="#fff6e8" />
+      <rect x="22" y="48" width="7" height="100" rx="2" fill="#8d5a34" />
+      <rect x="128" y="48" width="7" height="100" rx="2" fill="#8d5a34" />
+      <KeeperBody keeper={keeper} />
+      <path d="M10 34 h142 v14 H10 z" fill="#fff6e8" />
       {[0, 1, 2, 3, 4, 5, 6].map((stripe) => (
-        <rect key={stripe} x={10 + stripe * 20} y="52" width="10" height="16" fill="#0e5e59" />
+        <rect key={stripe} x={10 + stripe * 20} y="34" width="10" height="14" fill="#0e5e59" />
       ))}
-      <path d="M10 68 q12 10 24 0 q12 10 24 0 q12 10 24 0 q12 10 24 0 q12 10 24 0 q12 10 24 0 v6 H10 z" fill="#0e5e59" />
-      <CounterKeeper keeper={keeper} />
-      <rect x="40" y="16" width="82" height="30" rx="7" fill="#fffdfb" stroke="#0e5e59" strokeWidth="2" />
-      <text x="81" y="36" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="13" fontWeight="700" fill="#0e5e59">
+      <path d="M10 48 q12 8 24 0 q12 8 24 0 q12 8 24 0 q12 8 24 0 q12 8 24 0 q12 8 24 0 v5 H10 z" fill="#0e5e59" />
+      <rect x="44" y="4" width="80" height="26" rx="7" fill="#fffdfb" stroke="#0e5e59" strokeWidth="2" />
+      <text x="84" y="22" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="12" fontWeight="700" fill="#0e5e59">
         LEMONADE
       </text>
-      <rect x="16" y="108" width="132" height="38" rx="7" fill="#c9854a" />
-      <rect x="16" y="138" width="132" height="12" rx="3" fill="#a86b38" />
+      <KeeperHead keeper={keeper} />
+      <rect x="16" y="112" width="132" height="40" rx="7" fill="#c9854a" />
+      <rect x="16" y="144" width="132" height="12" rx="3" fill="#a86b38" />
       <KeeperHands keeper={keeper} />
-      <rect x="28" y="116" width="36" height="20" rx="3" fill="#fff6d2" stroke="#e2a800" />
-      <rect x="34" y="116" width="8" height="20" fill="#ffe14a" opacity="0.85" />
-      <path d="M78 92 h28 v26 h-22 q-6 0 -6 -8 z" fill="#fff8dc" stroke="#e2a800" strokeWidth="2" />
-      <path d="M82 100 h20 v14 h-16 q-4 0 -4 -5 z" fill="#ffe14a" />
-      <circle cx="100" cy="104" r="6" fill="#ffe14a" stroke="#e2a800" />
-      <rect x="112" y="116" width="28" height="18" rx="4" fill="#ffe14a" />
-      <text x="126" y="129" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="9" fontWeight="700" fill="#1c1915">
+      <rect x="28" y="122" width="36" height="20" rx="3" fill="#fff6d2" stroke="#e2a800" />
+      <rect x="34" y="122" width="8" height="20" fill="#ffe14a" opacity="0.85" />
+      <path d="M86 96 h26 v24 h-20 q-6 0 -6 -8 z" fill="#fff8dc" stroke="#e2a800" strokeWidth="2" />
+      <path d="M90 104 h18 v12 h-14 q-4 0 -4 -5 z" fill="#ffe14a" />
+      <circle cx="106" cy="108" r="5" fill="#ffe14a" stroke="#e2a800" />
+      <rect x="112" y="122" width="28" height="18" rx="4" fill="#ffe14a" />
+      <text x="126" y="135" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="9" fontWeight="700" fill="#1c1915">
         {price}
       </text>
       {closed && (
         <g>
-          <rect x="96" y="78" width="58" height="20" rx="5" fill="#1c1915" />
-          <text x="125" y="92" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="11" fontWeight="700" fill="#ffe14a">
+          <rect x="96" y="86" width="58" height="20" rx="5" fill="#1c1915" />
+          <text x="125" y="100" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="11" fontWeight="700" fill="#ffe14a">
             CLOSED
           </text>
         </g>
@@ -273,25 +274,33 @@ function LemonadeStand({ price, closed, keeper }: { price: string; closed: boole
   )
 }
 
-function CounterKeeper({ keeper }: { keeper: Keeper }) {
+function KeeperBody({ keeper }: { keeper: Keeper }) {
+  const girl = keeper === 'girl'
+  return (
+    <g>
+      <path d={girl ? 'M34 96 h28 v56 h-28 z' : 'M28 94 h40 v58 h-40 z'} fill="#fff6e8" />
+      <path d={girl ? 'M38 100 h20 v18 h-20 z' : 'M34 98 h28 v18 h-28 z'} fill="#0e5e59" />
+    </g>
+  )
+}
+
+function KeeperHead({ keeper }: { keeper: Keeper }) {
   const girl = keeper === 'girl'
   const skin = girl ? '#e0ac7a' : '#c68642'
   const hair = girl ? '#3a2414' : '#1c1915'
   return (
     <g data-testid="stand-keeper" data-keeper={keeper}>
-      <path d={girl ? 'M36 100 h28 v44 h-28 z' : 'M30 98 h40 v46 h-40 z'} fill="#fff6e8" />
-      <path d={girl ? 'M40 104 h20 v14 h-20 z' : 'M36 102 h28 v14 h-28 z'} fill="#0e5e59" />
-      <rect x="44" y="82" width="8" height="12" rx="3" fill={skin} />
+      <rect x="42" y="78" width="10" height="14" rx="4" fill={skin} />
       {girl ? (
-        <path d="M32 90 Q48 74 64 88 L62 106 Q48 96 34 106 Z" fill={hair} />
+        <path d="M28 78 Q46 52 66 76 L64 108 Q46 96 30 108 Z" fill={hair} />
       ) : (
-        <path d="M34 80 Q48 70 62 80 Q58 74 48 74 Q38 74 34 80" fill={hair} />
+        <path d="M30 70 Q46 52 64 70 Q60 62 46 60 Q34 62 30 70" fill={hair} />
       )}
-      <circle cx="48" cy="90" r={girl ? 12 : 13} fill={skin} />
-      <circle cx="43.5" cy="90" r="1.3" fill="#1c1915" />
-      <circle cx="52.5" cy="90" r="1.3" fill="#1c1915" />
-      <path d="M47.2 88.2 v2.6" stroke="#1c1915" strokeWidth="1" strokeLinecap="round" opacity="0.45" />
-      <path d="M44 95 Q48 98 52 95" fill="none" stroke="#1c1915" strokeWidth="1.2" strokeLinecap="round" />
+      <circle cx="46" cy="82" r={girl ? 15 : 16} fill={skin} />
+      <circle cx="41" cy="82" r="1.6" fill="#1c1915" />
+      <circle cx="51" cy="82" r="1.6" fill="#1c1915" />
+      <path d="M45.2 79.5 v3" stroke="#1c1915" strokeWidth="1.1" strokeLinecap="round" opacity="0.45" />
+      <path d="M40 88 Q46 92 52 88" fill="none" stroke="#1c1915" strokeWidth="1.4" strokeLinecap="round" />
     </g>
   )
 }
@@ -300,8 +309,8 @@ function KeeperHands({ keeper }: { keeper: Keeper }) {
   const skin = keeper === 'girl' ? '#e0ac7a' : '#c68642'
   return (
     <g aria-hidden="true">
-      <ellipse cx="40" cy="110" rx="6" ry="3.2" fill={skin} />
-      <ellipse cx="58" cy="110" rx="6" ry="3.2" fill={skin} />
+      <ellipse cx="38" cy="116" rx="6.5" ry="3.4" fill={skin} />
+      <ellipse cx="56" cy="116" rx="6.5" ry="3.4" fill={skin} />
     </g>
   )
 }
