@@ -310,7 +310,7 @@ export function buildSidewalk(result: DayResult): SidewalkCast {
 
 /** Buyer stops beside the tall stand, under the seller's offered cup. */
 export function stopX(width: number): number {
-  return Math.max(158, Math.min(176, width - 108))
+  return Math.max(150, Math.min(168, width - 116))
 }
 
 /** Horizontal position in the scene. Null when the person is offstage. */

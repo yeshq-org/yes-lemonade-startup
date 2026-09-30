@@ -49,8 +49,8 @@ export function SidewalkDay({
   const closed = result.hours <= 0
   const progress = crowdProgress(cast.people, finished ? cast.duration : elapsed)
   const clock = sidewalkClock(progress)
-  const sunLeft = 4 + progress * 82
-  const sunTop = 14 + (1 - Math.sin(progress * Math.PI)) * 16
+  const sunLeft = 8 + progress * 76
+  const sunTop = 4 + (1 - Math.sin(progress * Math.PI)) * 8
 
   return (
     <section aria-label="Sidewalk outside the lemonade stand" className="mt-2">
@@ -67,16 +67,16 @@ export function SidewalkDay({
       <p data-testid="day-weather" className="mb-1.5 text-xs font-semibold text-ink">
         {weatherReadout(result.weather)}
       </p>
-      <div ref={sceneRef} data-testid="sidewalk" className="relative h-[312px] overflow-hidden rounded-[28px] bg-[#c5d7ea]">
+      <div ref={sceneRef} data-testid="sidewalk" className="relative h-[360px] overflow-hidden rounded-[28px] bg-[#c5d7ea]">
         <div className="absolute inset-0" style={{ background: `linear-gradient(${skyTop}, ${skyBottom})` }} />
         <div
           data-testid="day-sun"
           data-progress={progress.toFixed(3)}
-          className="absolute z-[1] h-8 w-8 rounded-full bg-[#ffe14a] shadow-[0_0_0_8px_rgba(255,225,74,0.35)]"
+          className="absolute z-[1] h-6 w-6 rounded-full bg-[#ffe14a] shadow-[0_0_0_6px_rgba(255,225,74,0.35)]"
           style={{ left: `${sunLeft}%`, top: sunTop, opacity: result.weather.sky === 'rain' ? 0.85 : 1 }}
         />
         {result.weather.sky !== 'clear' && (
-          <div className="absolute top-[72px] left-28 h-8 w-24 rounded-full bg-white/90 shadow-[16px_4px_0_6px_rgba(255,255,255,0.85)]" />
+          <div className="absolute top-2 right-8 h-7 w-20 rounded-full bg-white/90 shadow-[14px_3px_0_5px_rgba(255,255,255,0.85)]" />
         )}
         {!reduced &&
           result.weather.sky === 'rain' &&
@@ -122,7 +122,7 @@ export function SidewalkDay({
           <p
             data-testid="customer-comment"
             aria-live="polite"
-            className="pop-in absolute top-[88px] right-2 left-24 z-30 rounded-2xl bg-white px-2.5 py-1.5 text-[13px] leading-snug font-semibold text-ink shadow-[0_8px_20px_rgba(28,25,21,0.12)]"
+            className="pop-in absolute top-[196px] right-2 z-30 max-w-[11rem] rounded-2xl bg-white px-2.5 py-1.5 text-[13px] leading-snug font-semibold text-ink shadow-[0_8px_20px_rgba(28,25,21,0.12)]"
           >
             {speaker.comment}
           </p>
@@ -186,36 +186,36 @@ function LemonadeStand({ price, closed, keeper, offering }: { price: string; clo
   return (
     <svg
       data-testid="lemonade-stand"
-      viewBox="0 0 200 248"
-      className="absolute bottom-[6px] left-0 z-10 h-[214px] w-[172px]"
+      viewBox="0 0 200 400"
+      className="absolute bottom-[6px] left-0 z-10 h-[314px] w-[157px]"
       aria-hidden="true"
     >
-      <rect x="28" y="46" width="8" height="190" rx="2" fill="#8d5a34" />
-      <rect x="158" y="46" width="8" height="190" rx="2" fill="#8d5a34" />
-      <path d="M18 36 h164 v16 H18 z" fill="#fff6e8" />
+      <rect x="34" y="18" width="8" height="374" rx="2" fill="#8d5a34" />
+      <rect x="152" y="18" width="8" height="374" rx="2" fill="#8d5a34" />
+      <path d="M38 214 H156" stroke="#8d5a34" strokeWidth="6" />
+      <path d="M42 190 L152 214" stroke="#a86b38" strokeWidth="4" />
+      <rect x="26" y="176" width="142" height="16" rx="3" fill="#a86b38" />
+      <rect x="34" y="166" width="126" height="14" rx="2" fill="#c9854a" />
+      <path d="M14 4 h172 v16 H14 z" fill="#fff6e8" />
       {[0, 1, 2, 3, 4, 5, 6, 7].map((stripe) => (
-        <rect key={stripe} x={18 + stripe * 20} y="36" width="10" height="16" fill="#0e5e59" />
+        <rect key={stripe} x={14 + stripe * 21.5} y="4" width="11" height="16" fill="#0e5e59" />
       ))}
-      <path d="M18 52 q14 8 28 0 q14 8 28 0 q14 8 28 0 q14 8 28 0 q14 8 28 0 q14 8 28 0 v6 H18 z" fill="#0e5e59" />
-      <rect x="58" y="4" width="84" height="26" rx="7" fill="#fffdfb" stroke="#0e5e59" strokeWidth="2" />
-      <text x="100" y="22" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="12" fontWeight="700" fill="#0e5e59">
+      <path d="M14 20 q14 8 28 0 q14 8 28 0 q14 8 28 0 q14 8 28 0 q14 8 28 0 q14 8 28 0 v6 H14 z" fill="#0e5e59" />
+      <text x="100" y="16" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="10" fontWeight="700" fill="#fffdfb">
         LEMONADE
       </text>
-      <rect x="36" y="176" width="118" height="16" rx="3" fill="#a86b38" />
-      <rect x="44" y="168" width="102" height="12" rx="2" fill="#c9854a" />
       <StandingSeller keeper={keeper} offering={offering} />
-      <rect x="22" y="124" width="150" height="28" rx="6" fill="#c9854a" />
-      <rect x="22" y="146" width="150" height="10" rx="3" fill="#a86b38" />
-      <rect x="32" y="140" width="28" height="14" rx="3" fill="#fff6d2" stroke="#e2a800" />
-      <rect x="36" y="140" width="6" height="14" fill="#ffe14a" opacity="0.85" />
-      <rect x="126" y="142" width="36" height="16" rx="4" fill="#ffe14a" />
-      <text x="144" y="154" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="10" fontWeight="700" fill="#1c1915">
+      <rect x="16" y="108" width="164" height="16" rx="4" fill="#c9854a" />
+      <rect x="16" y="120" width="164" height="12" rx="3" fill="#a86b38" />
+      <rect x="26" y="112" width="22" height="12" rx="2" fill="#fff6d2" stroke="#e2a800" />
+      <rect x="126" y="112" width="44" height="16" rx="4" fill="#ffe14a" />
+      <text x="148" y="124" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="11" fontWeight="700" fill="#1c1915">
         {price}
       </text>
       {closed && (
         <g>
-          <rect x="118" y="96" width="64" height="22" rx="5" fill="#1c1915" />
-          <text x="150" y="111" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="11" fontWeight="700" fill="#ffe14a">
+          <rect x="112" y="78" width="64" height="20" rx="5" fill="#1c1915" />
+          <text x="144" y="92" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="11" fontWeight="700" fill="#ffe14a">
             CLOSED
           </text>
         </g>
