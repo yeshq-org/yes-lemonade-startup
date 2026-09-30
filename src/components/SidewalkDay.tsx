@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { formatMoney } from '../game/money'
-import { pedestrianX, stillFigures, type Pedestrian, type SidewalkCast } from '../game/sidewalk'
+import { crowdProgress, pedestrianX, sidewalkClock, stillFigures, type Pedestrian, type SidewalkCast } from '../game/sidewalk'
 import type { DayResult, Keeper } from '../game/types'
 import { weatherReadout } from '../game/weather'
 import { skyColors } from './art'
-import { KeeperOffer, KeeperPortrait, LOOKS, PersonFigure, type Pose } from './people'
+import { LOOKS, PersonFigure, StandingSeller, type Pose } from './people'
 
 export function SidewalkDay({
   result,
@@ -47,16 +47,36 @@ export function SidewalkDay({
     : (cast.people.find((person) => person.comment && elapsed >= person.take && elapsed <= person.depart) ?? null)
   const [skyTop, skyBottom] = skyColors(result.weather)
   const closed = result.hours <= 0
+  const progress = crowdProgress(cast.people, finished ? cast.duration : elapsed)
+  const clock = sidewalkClock(progress)
+  const sunLeft = 4 + progress * 82
+  const sunTop = 14 + (1 - Math.sin(progress * Math.PI)) * 16
 
   return (
-    <section aria-label="Sidewalk outside the lemonade stand" className="mt-3">
-      <div ref={sceneRef} data-testid="sidewalk" className="relative h-[318px] overflow-hidden rounded-[28px] bg-[#c5d7ea]">
+    <section aria-label="Sidewalk outside the lemonade stand" className="mt-2">
+      <div className="mb-1.5 flex items-center gap-2" data-testid="day-timeline">
+        <p className="w-14 text-[11px] font-bold text-ink-soft">9:00am</p>
+        <div className="relative h-2 flex-1 rounded-full bg-sand">
+          <div className="absolute inset-y-0 left-0 rounded-full bg-[#e2a800]" style={{ width: `${progress * 100}%` }} />
+        </div>
+        <p className="w-14 text-right text-[11px] font-bold text-ink-soft">5:00pm</p>
+        <p className="w-16 text-right font-display text-lg leading-none font-semibold" data-testid="day-clock">
+          {clock}
+        </p>
+      </div>
+      <p data-testid="day-weather" className="mb-1.5 text-xs font-semibold text-ink">
+        {weatherReadout(result.weather)}
+      </p>
+      <div ref={sceneRef} data-testid="sidewalk" className="relative h-[312px] overflow-hidden rounded-[28px] bg-[#c5d7ea]">
         <div className="absolute inset-0" style={{ background: `linear-gradient(${skyTop}, ${skyBottom})` }} />
-        {result.weather.sky !== 'rain' && (
-          <div className="absolute top-5 right-6 h-12 w-12 rounded-full bg-[#ffe14a] shadow-[0_0_0_10px_rgba(255,225,74,0.35)]" />
-        )}
+        <div
+          data-testid="day-sun"
+          data-progress={progress.toFixed(3)}
+          className="absolute z-[1] h-8 w-8 rounded-full bg-[#ffe14a] shadow-[0_0_0_8px_rgba(255,225,74,0.35)]"
+          style={{ left: `${sunLeft}%`, top: sunTop, opacity: result.weather.sky === 'rain' ? 0.85 : 1 }}
+        />
         {result.weather.sky !== 'clear' && (
-          <div className="absolute top-8 left-24 h-10 w-28 rounded-full bg-white/90 shadow-[18px_6px_0_8px_rgba(255,255,255,0.85)]" />
+          <div className="absolute top-[72px] left-28 h-8 w-24 rounded-full bg-white/90 shadow-[16px_4px_0_6px_rgba(255,255,255,0.85)]" />
         )}
         {!reduced &&
           result.weather.sky === 'rain' &&
@@ -74,12 +94,6 @@ export function SidewalkDay({
             <span key={slab} className="absolute top-0 bottom-0 w-px bg-[#c9b495]" style={{ left: `${slab * 20}%` }} />
           ))}
         </div>
-        <p
-          data-testid="day-weather"
-          className="absolute top-3 left-3 z-40 max-w-[15rem] rounded-full bg-white/95 px-3 py-1 text-[12px] leading-snug font-semibold text-ink shadow-[0_4px_12px_rgba(28,25,21,0.12)]"
-        >
-          {weatherReadout(result.weather)}
-        </p>
         <LemonadeStand
           price={formatMoney(result.recipe.priceCents)}
           closed={closed}
@@ -108,7 +122,7 @@ export function SidewalkDay({
           <p
             data-testid="customer-comment"
             aria-live="polite"
-            className="pop-in absolute top-16 right-3 left-3 z-30 rounded-2xl bg-white px-3 py-2 text-[15px] leading-snug font-semibold text-ink shadow-[0_8px_20px_rgba(28,25,21,0.12)]"
+            className="pop-in absolute top-[88px] right-2 left-24 z-30 rounded-2xl bg-white px-2.5 py-1.5 text-[13px] leading-snug font-semibold text-ink shadow-[0_8px_20px_rgba(28,25,21,0.12)]"
           >
             {speaker.comment}
           </p>
@@ -160,8 +174,8 @@ function Person({
       data-kind={person.kind}
       data-pose={pose}
       data-cup={cup ? 'yes' : 'no'}
-      className="absolute z-20 w-[98px]"
-      style={{ left: x, bottom: 16, transform: `translateY(${bob}px)` }}
+      className="absolute z-20 w-[66px]"
+      style={{ left: x, bottom: 8, transform: `translateY(${bob}px)` }}
     >
       <PersonFigure look={look} hair={person.look % 6} pose={pose} step={step} cup={cup} reach={reach} />
     </div>
@@ -172,37 +186,36 @@ function LemonadeStand({ price, closed, keeper, offering }: { price: string; clo
   return (
     <svg
       data-testid="lemonade-stand"
-      viewBox="0 0 168 168"
-      className="absolute bottom-[16px] left-0 z-10 h-[188px] w-[180px]"
+      viewBox="0 0 200 248"
+      className="absolute bottom-[6px] left-0 z-10 h-[214px] w-[172px]"
       aria-hidden="true"
     >
-      <rect x="22" y="48" width="7" height="100" rx="2" fill="#8d5a34" />
-      <rect x="128" y="48" width="7" height="100" rx="2" fill="#8d5a34" />
-      <path d="M10 34 h142 v14 H10 z" fill="#fff6e8" />
-      {[0, 1, 2, 3, 4, 5, 6].map((stripe) => (
-        <rect key={stripe} x={10 + stripe * 20} y="34" width="10" height="14" fill="#0e5e59" />
+      <rect x="28" y="46" width="8" height="190" rx="2" fill="#8d5a34" />
+      <rect x="158" y="46" width="8" height="190" rx="2" fill="#8d5a34" />
+      <path d="M18 36 h164 v16 H18 z" fill="#fff6e8" />
+      {[0, 1, 2, 3, 4, 5, 6, 7].map((stripe) => (
+        <rect key={stripe} x={18 + stripe * 20} y="36" width="10" height="16" fill="#0e5e59" />
       ))}
-      <path d="M10 48 q12 8 24 0 q12 8 24 0 q12 8 24 0 q12 8 24 0 q12 8 24 0 q12 8 24 0 v5 H10 z" fill="#0e5e59" />
-      <rect x="44" y="4" width="80" height="26" rx="7" fill="#fffdfb" stroke="#0e5e59" strokeWidth="2" />
-      <text x="84" y="22" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="12" fontWeight="700" fill="#0e5e59">
+      <path d="M18 52 q14 8 28 0 q14 8 28 0 q14 8 28 0 q14 8 28 0 q14 8 28 0 q14 8 28 0 v6 H18 z" fill="#0e5e59" />
+      <rect x="58" y="4" width="84" height="26" rx="7" fill="#fffdfb" stroke="#0e5e59" strokeWidth="2" />
+      <text x="100" y="22" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="12" fontWeight="700" fill="#0e5e59">
         LEMONADE
       </text>
-      <KeeperPortrait keeper={keeper} />
-      <rect x="16" y="118" width="132" height="34" rx="7" fill="#c9854a" />
-      <rect x="16" y="146" width="132" height="10" rx="3" fill="#a86b38" />
-      <rect x="24" y="124" width="32" height="16" rx="3" fill="#fff6d2" stroke="#e2a800" />
-      <rect x="28" y="124" width="7" height="16" fill="#ffe14a" opacity="0.85" />
-      <path d="M22 98 h20 v18 h-14 q-6 0 -6 -6 z" fill="#fff8dc" stroke="#e2a800" strokeWidth="1.6" />
-      <path d="M25 104 h14 v8 h-10 q-4 0 -4 -4 z" fill="#ffe14a" />
-      <rect x="108" y="126" width="32" height="16" rx="4" fill="#ffe14a" />
-      <text x="124" y="137" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="9" fontWeight="700" fill="#1c1915">
+      <rect x="36" y="176" width="118" height="16" rx="3" fill="#a86b38" />
+      <rect x="44" y="168" width="102" height="12" rx="2" fill="#c9854a" />
+      <StandingSeller keeper={keeper} offering={offering} />
+      <rect x="22" y="124" width="150" height="28" rx="6" fill="#c9854a" />
+      <rect x="22" y="146" width="150" height="10" rx="3" fill="#a86b38" />
+      <rect x="32" y="140" width="28" height="14" rx="3" fill="#fff6d2" stroke="#e2a800" />
+      <rect x="36" y="140" width="6" height="14" fill="#ffe14a" opacity="0.85" />
+      <rect x="126" y="142" width="36" height="16" rx="4" fill="#ffe14a" />
+      <text x="144" y="154" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="10" fontWeight="700" fill="#1c1915">
         {price}
       </text>
-      <KeeperOffer keeper={keeper} offering={offering} />
       {closed && (
         <g>
-          <rect x="96" y="86" width="58" height="20" rx="5" fill="#1c1915" />
-          <text x="125" y="100" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="11" fontWeight="700" fill="#ffe14a">
+          <rect x="118" y="96" width="64" height="22" rx="5" fill="#1c1915" />
+          <text x="150" y="111" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="11" fontWeight="700" fill="#ffe14a">
             CLOSED
           </text>
         </g>

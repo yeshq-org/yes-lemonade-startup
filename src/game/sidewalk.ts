@@ -208,6 +208,38 @@ export interface Tally {
   revenueCents: number
 }
 
+const OPEN_MINUTE = 9 * 60
+const CLOSE_MINUTE = 17 * 60
+
+/**
+ * How far the shown crowd has carried the day, from 0 at 9:00am to 1 at 5:00pm.
+ * It stays at 0 until the first person is shown, then moves as each one acts,
+ * and reaches 1 only after the last person has left.
+ */
+export function crowdProgress(people: Pedestrian[], time: number): number {
+  if (people.length === 0) return 0
+  const marks = people.map((person) => person.take).sort((a, b) => a - b)
+  const doneAt = Math.max(...people.map((person) => person.end))
+  if (time < marks[0]!) return 0
+  if (time >= doneAt) return 1
+  let shown = 0
+  while (shown < marks.length && time >= marks[shown]!) shown += 1
+  const from = marks[shown - 1]!
+  const to = shown < marks.length ? marks[shown]! : doneAt
+  const along = (time - from) / Math.max(0.001, to - from)
+  return Math.min(1, (shown - 1 + along) / marks.length)
+}
+
+/** Clock label for the sidewalk. Always the 9:00am–5:00pm day, whatever hours were chosen. */
+export function sidewalkClock(progress: number): string {
+  const minute = OPEN_MINUTE + Math.round(Math.min(1, Math.max(0, progress)) * (CLOSE_MINUTE - OPEN_MINUTE))
+  const hour24 = Math.floor(minute / 60)
+  const mins = minute % 60
+  const suffix = hour24 >= 12 ? 'pm' : 'am'
+  const hour12 = hour24 % 12 || 12
+  return `${hour12}:${mins.toString().padStart(2, '0')}${suffix}`
+}
+
 /** Counts only actions that have already happened by `time`. */
 export function tallyAt(people: Pedestrian[], time: number): Tally {
   const tally: Tally = { served: 0, walked: 0, missed: 0, revenueCents: 0 }
@@ -276,9 +308,9 @@ export function buildSidewalk(result: DayResult): SidewalkCast {
   return { people, duration }
 }
 
-/** Buyer stops with an outstretched hand at the cup on the right edge of the stand. */
+/** Buyer stops beside the tall stand, under the seller's offered cup. */
 export function stopX(width: number): number {
-  return Math.max(148, Math.min(156, width - 130))
+  return Math.max(158, Math.min(176, width - 108))
 }
 
 /** Horizontal position in the scene. Null when the person is offstage. */

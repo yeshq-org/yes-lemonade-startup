@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { settleCrowd } from './crowd'
 import { addStock, emptyInventory } from './inventory'
 import { simulateDay } from './simulate'
-import { buildSidewalk, buyerComments, pedestrianX, reviseCrowd, tallyAt } from './sidewalk'
+import { buildSidewalk, buyerComments, crowdProgress, pedestrianX, reviseCrowd, sidewalkClock, tallyAt } from './sidewalk'
 import type { DayResult, Recipe, Weather } from './types'
 
 const weather: Weather = { heat: 'hot', sky: 'clear', tempF: 94 }
@@ -129,6 +129,22 @@ describe('sidewalk cast', () => {
     expect(books.result.revenueCents).not.toBe(books.result.sold * 400)
     expect(books.result.sold + books.result.walkedAway + books.result.soldOutMissed).toBe(16)
     expect(books.result.grossCents).toBe(books.result.revenueCents - books.result.cogsCents)
+  })
+
+  it('moves the sidewalk clock from 9:00am to 5:00pm only as people are shown', () => {
+    const cast = buildSidewalk(day())
+    expect(sidewalkClock(0)).toBe('9:00am')
+    expect(sidewalkClock(0.5)).toBe('1:00pm')
+    expect(sidewalkClock(1)).toBe('5:00pm')
+    expect(crowdProgress(cast.people, 0)).toBe(0)
+    const first = cast.people[0]!
+    expect(crowdProgress(cast.people, first.take - 0.05)).toBe(0)
+    const midway = crowdProgress(cast.people, cast.duration * 0.45)
+    expect(midway).toBeGreaterThan(0)
+    expect(midway).toBeLessThan(1)
+    expect(crowdProgress(cast.people, cast.duration)).toBe(1)
+    expect(sidewalkClock(crowdProgress(cast.people, 0))).toBe('9:00am')
+    expect(sidewalkClock(crowdProgress(cast.people, cast.duration))).toBe('5:00pm')
   })
 
   it('matches a single opening price when nobody has arrived yet', () => {

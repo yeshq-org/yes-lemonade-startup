@@ -61,22 +61,22 @@ export function Selling({ onTitle }: { onTitle: () => void }) {
     <Shell>
       <Header onTitle={onTitle} cashCents={displayCash} />
       <main className="flex-1 px-4 pt-4">
-        <h1 ref={heading} tabIndex={-1} className="font-display text-3xl font-semibold outline-none">
+        <h1 ref={heading} tabIndex={-1} className="font-display text-2xl leading-tight font-semibold outline-none">
           {result.hours === 0 ? 'Shutters down' : 'On the sidewalk'}
         </h1>
-        <p className="mt-1 text-ink-soft">
+        <p className="mt-0.5 text-sm text-ink-soft">
           {result.hours === 0
             ? 'The stand stays closed. People keep walking.'
             : 'Some people walk by. Some stop, take a cup, and tell you what it was like.'}
         </p>
-        <SidewalkDay result={result} cast={cast} elapsed={elapsed} reduced={reduced || skipped} keeper={state.keeper} />
         {result.hours > 0 && state.shelf && !done && (
           <PriceOnTheCurb
             priceCents={state.recipe.priceCents}
             onChange={(cents) => dispatch({ type: 'set-price', cents, at: elapsedRef.current })}
           />
         )}
-        <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
+        <SidewalkDay result={result} cast={cast} elapsed={elapsed} reduced={reduced || skipped} keeper={state.keeper} />
+        <dl className="mt-2 grid grid-cols-3 gap-2 text-center">
           <Count label="Served" value={tally.served} testId="tally-served" />
           <Count label="Walked" value={tally.walked} testId="tally-walked" />
           <Count label="Sold out" value={tally.missed} testId="tally-missed" />
@@ -117,33 +117,35 @@ export function Selling({ onTitle }: { onTitle: () => void }) {
 
 function PriceOnTheCurb({ priceCents, onChange }: { priceCents: number; onChange: (cents: number) => void }) {
   return (
-    <section className="mt-4" data-testid="sidewalk-price">
-      <div className="flex items-end justify-between gap-3">
-        <h2 className="font-display text-2xl font-semibold">Price per cup</h2>
-        <p className="font-display text-4xl font-semibold">{formatMoney(priceCents)}</p>
+    <section className="mt-2" data-testid="sidewalk-price">
+      <div className="flex items-center gap-2">
+        <div className="shrink-0">
+          <p className="text-[10px] font-bold tracking-[0.12em] text-ink-soft">PRICE PER CUP</p>
+          <p className="font-display text-2xl leading-none font-semibold">{formatMoney(priceCents)}</p>
+        </div>
+        <div className="flex flex-1 gap-1">
+          {[
+            ['−25¢', -25],
+            ['−5¢', -5],
+            ['+5¢', 5],
+            ['+25¢', 25],
+          ].map(([label, delta]) => {
+            const next = priceCents + Number(delta)
+            return (
+              <button
+                key={label}
+                type="button"
+                className="min-h-11 flex-1 rounded-xl bg-sand text-sm font-semibold disabled:opacity-40"
+                disabled={next < PRICE_MIN_CENTS || next > PRICE_MAX_CENTS}
+                onClick={() => onChange(next)}
+              >
+                {label}
+              </button>
+            )
+          })}
+        </div>
       </div>
-      <div className="mt-2 flex gap-2">
-        {[
-          ['−25¢', -25],
-          ['−5¢', -5],
-          ['+5¢', 5],
-          ['+25¢', 25],
-        ].map(([label, delta]) => {
-          const next = priceCents + Number(delta)
-          return (
-            <button
-              key={label}
-              type="button"
-              className="min-h-12 flex-1 rounded-xl bg-sand font-semibold disabled:opacity-40"
-              disabled={next < PRICE_MIN_CENTS || next > PRICE_MAX_CENTS}
-              onClick={() => onChange(next)}
-            >
-              {label}
-            </button>
-          )
-        })}
-      </div>
-      <p className="mt-2 text-sm text-ink-soft">People already at the stand keep the price they walked up to. The next ones see this.</p>
+      <p className="mt-1 text-xs text-ink-soft">People already at the stand keep the price they walked up to. The next ones see this.</p>
     </section>
   )
 }
@@ -152,7 +154,7 @@ function Count({ label, value, testId }: { label: string; value: number; testId:
   return (
     <div className="rounded-2xl bg-sand px-2 py-3">
       <dt className="text-sm text-ink-soft">{label}</dt>
-      <dd className="font-display text-3xl font-semibold" data-testid={testId}>
+      <dd className="font-display text-2xl font-semibold" data-testid={testId}>
         {value}
       </dd>
     </div>
