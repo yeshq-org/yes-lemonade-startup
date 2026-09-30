@@ -89,6 +89,32 @@ export interface DayResult {
   suppliesValueCents: number
 }
 
+/** One person on the sidewalk, or a share of the crowd standing in for several. */
+export interface Arrival {
+  id: number
+  kind: 'buy' | 'pass' | 'out'
+  comment: string | null
+  look: number
+  /** How many real customers this figure stands for. */
+  weight: number
+  /** Price they pay if they buy, or the price they walked up to. */
+  priceCents: number
+  /** Closed-stand passers are scenery and do not move the tally. */
+  counts: boolean
+  start: number
+  arrive: number
+  reach: number
+  take: number
+  depart: number
+  end: number
+}
+
+/** Stock and cash after the stand fee, before any cup is sold. */
+export interface DayShelf {
+  inventory: Inventory
+  cashAfterFeesCents: number
+}
+
 export interface GameState {
   version: 1
   seed: number
@@ -107,6 +133,10 @@ export interface GameState {
   /** Who stands behind the counter for the whole season. */
   keeper: Keeper
   pending: DayResult | null
+  /** Shelf before today's sales, used if the price changes mid-sidewalk. */
+  shelf: DayShelf | null
+  /** Crowd currently scripted for the sidewalk. Null outside the selling phase. */
+  arrivals: Arrival[] | null
   reflections: [string, string, string]
 }
 

@@ -36,6 +36,8 @@ export function createGame(seasonDays: SeasonLength, seed: number, keeper: Keepe
     hours: 8,
     keeper,
     pending: null,
+    shelf: null,
+    arrivals: null,
     reflections: ['', '', ''],
   }
 }

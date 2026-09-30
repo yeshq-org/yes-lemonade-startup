@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { buildSidewalk, buyerComments, pedestrianX } from './sidewalk'
+import { settleCrowd } from './crowd'
+import { addStock, emptyInventory } from './inventory'
+import { simulateDay } from './simulate'
+import { buildSidewalk, buyerComments, pedestrianX, reviseCrowd, tallyAt } from './sidewalk'
 import type { DayResult, Recipe, Weather } from './types'
 
 const weather: Weather = { heat: 'hot', sky: 'clear', tempF: 94 }
@@ -82,4 +85,79 @@ describe('sidewalk cast', () => {
     expect(cast.people.some((person) => person.kind === 'pass')).toBe(true)
     expect(cast.people.filter((person) => person.kind === 'buy').length).toBeGreaterThan(0)
   })
+
+  it('starts the tally at zero and adds each share only after that person acts', () => {
+    const cast = buildSidewalk(day())
+    expect(tallyAt(cast.people, 0)).toEqual({ served: 0, walked: 0, missed: 0, revenueCents: 0 })
+    const buyer = cast.people.find((person) => person.kind === 'buy')!
+    expect(tallyAt(cast.people, buyer.take - 0.01).served).toBe(0)
+    expect(tallyAt(cast.people, buyer.take).served).toBe(buyer.weight)
+    const finished = tallyAt(cast.people, cast.duration)
+    expect(finished.served).toBe(24)
+    expect(finished.walked).toBe(10)
+    expect(finished.missed).toBe(6)
+    expect(finished.revenueCents).toBe(2400)
+    const closed = buildSidewalk(day({ hours: 0, potential: 0, willing: 0, sold: 0, walkedAway: 0, soldOutMissed: 0 }))
+    expect(tallyAt(closed.people, closed.duration)).toEqual({ served: 0, walked: 0, missed: 0, revenueCents: 0 })
+  })
+
+  it('keeps a price already walked up to and reprices everyone still coming', () => {
+    const opening = day({
+      sold: 10,
+      walkedAway: 6,
+      soldOutMissed: 0,
+      potential: 16,
+      willing: 10,
+      cupsReady: 20,
+      revenueCents: 1500,
+      recipe: { ...recipe, priceCents: 150 },
+      fairPriceCents: 150,
+      taste: 100,
+    })
+    const people = buildSidewalk(opening).people
+    const first = people.find((person) => person.kind === 'buy')!
+    const revised = reviseCrowd(people, first.arrive + 0.01, 400, opening)
+    const locked = revised.filter((person) => person.counts && person.arrive <= first.arrive + 0.01 && person.kind === 'buy')
+    const later = revised.filter((person) => person.counts && person.arrive > first.arrive + 0.01 && person.kind === 'buy')
+    expect(locked.length).toBeGreaterThan(0)
+    expect(locked.every((person) => person.priceCents === 150)).toBe(true)
+    expect(later.every((person) => person.priceCents === 400)).toBe(true)
+    const books = settleCrowd(opening, revised, stockedShelf(), 400)
+    const lockedRevenue = locked.reduce((sum, person) => sum + person.weight * person.priceCents, 0)
+    const laterRevenue = later.reduce((sum, person) => sum + person.weight * person.priceCents, 0)
+    expect(books.result.revenueCents).toBe(lockedRevenue + laterRevenue)
+    expect(books.result.revenueCents).not.toBe(books.result.sold * 400)
+    expect(books.result.sold + books.result.walkedAway + books.result.soldOutMissed).toBe(16)
+    expect(books.result.grossCents).toBe(books.result.revenueCents - books.result.cogsCents)
+  })
+
+  it('matches a single opening price when nobody has arrived yet', () => {
+    const played = simulateDay({
+      day: 1,
+      seed: 4,
+      weather,
+      inventory: stockedShelf(),
+      recipe: { lemons: 4, sugar: 4, ice: 4, priceCents: 150 },
+      hours: 8,
+      popularity: 40,
+      previousSatisfaction: null,
+    })
+    const people = buildSidewalk(played.result).people
+    const same = reviseCrowd(people, 0, 150, played.result)
+    expect(tallyAt(same, 999).served).toBe(played.result.sold)
+    const higher = reviseCrowd(people, 0, 400, played.result)
+    const settled = settleCrowd(played.result, higher, stockedShelf(), 400)
+    expect(settled.result.sold).toBeLessThan(played.result.sold)
+    expect(settled.result.revenueCents).toBe(settled.result.sold * 400)
+    expect(settled.result.walkedAway).toBeGreaterThan(played.result.walkedAway)
+  })
 })
+
+function stockedShelf() {
+  let inv = emptyInventory()
+  inv = addStock(inv, 'cups', 100, 898)
+  inv = addStock(inv, 'lemons', 75, 3300)
+  inv = addStock(inv, 'sugar', 48, 1560)
+  inv = addStock(inv, 'ice', 500, 625)
+  return inv
+}

@@ -1,7 +1,10 @@
+import { settleCrowd } from '../game/crowd'
 import { PRICE_MAX_CENTS, PRICE_MIN_CENTS } from '../game/constants'
-import { applyCart, cartCostCents, meltIce, spoilProduce } from '../game/inventory'
+import { dayFees } from '../game/demand'
+import { applyCart, cartCostCents, cloneInventory, meltIce, spoilProduce } from '../game/inventory'
 import { simulateDay } from '../game/simulate'
 import { createGame } from '../game/setup'
+import { planCrowd, reviseCrowd } from '../game/sidewalk'
 import type { CartLine, GameState, Hours, ItemId, Keeper, SeasonLength } from '../game/types'
 import { HOUR_CHOICES } from '../game/types'
 import { clamp } from '../game/util'
@@ -18,7 +21,7 @@ export type Action =
   | { type: 'set-lemons'; value: number }
   | { type: 'set-sugar'; value: number }
   | { type: 'set-ice'; value: number }
-  | { type: 'set-price'; cents: number }
+  | { type: 'set-price'; cents: number; at?: number }
   | { type: 'set-hours'; hours: Hours }
   | { type: 'open' }
   | { type: 'to-report' }
@@ -90,11 +93,22 @@ export function reducer(state: GameState | null, action: Action): GameState | nu
       return { ...state, recipe: { ...state.recipe, sugar: clamp(Math.round(action.value), 1, 8) } }
     case 'set-ice':
       return { ...state, recipe: { ...state.recipe, ice: clamp(Math.round(action.value), 0, 8) } }
-    case 'set-price':
+    case 'set-price': {
+      const priceCents = clamp(Math.round(action.cents), PRICE_MIN_CENTS, PRICE_MAX_CENTS)
+      if (state.phase !== 'selling') return { ...state, recipe: { ...state.recipe, priceCents } }
+      if (!state.shelf || !state.arrivals || !state.pending || priceCents === state.recipe.priceCents) return state
+      const arrivals = reviseCrowd(state.arrivals, action.at ?? 0, priceCents, state.pending)
+      const settled = settleCrowd(state.pending, arrivals, state.shelf.inventory, priceCents)
       return {
         ...state,
-        recipe: { ...state.recipe, priceCents: clamp(Math.round(action.cents), PRICE_MIN_CENTS, PRICE_MAX_CENTS) },
+        recipe: { ...state.recipe, priceCents },
+        arrivals,
+        pending: settled.result,
+        inventory: settled.inventory,
+        cashCents: state.shelf.cashAfterFeesCents + settled.result.revenueCents,
+        popularity: settled.result.popularityAfter,
       }
+    }
     case 'set-hours':
       if (!HOUR_CHOICES.includes(action.hours)) return state
       return { ...state, hours: action.hours }
@@ -113,18 +127,22 @@ export function reducer(state: GameState | null, action: Action): GameState | nu
         popularity: state.popularity,
         previousSatisfaction: previous?.satisfaction ?? null,
       })
+      const fees = dayFees(state.hours)
+      const cashAfterFeesCents = state.cashCents - fees.standFeeCents - fees.helperCents
       return {
         ...state,
         inventory: played.inventory,
-        cashCents: state.cashCents + played.cashDeltaCents,
+        cashCents: cashAfterFeesCents + played.result.revenueCents,
         popularity: played.popularity,
         pending: played.result,
+        shelf: { inventory: cloneInventory(state.inventory), cashAfterFeesCents },
+        arrivals: planCrowd(played.result),
         phase: 'selling',
       }
     }
     case 'to-report':
       if (state.phase !== 'selling' || !state.pending) return state
-      return { ...state, phase: 'report' }
+      return { ...state, phase: 'report', arrivals: null, shelf: null }
     case 'advance': {
       if (state.phase !== 'report' || !state.pending) return state
       const melted = meltIce(state.inventory)

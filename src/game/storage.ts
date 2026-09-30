@@ -1,4 +1,4 @@
-import type { GameState, Inventory, Keeper, Lot, SeasonLength } from './types'
+import type { Arrival, DayShelf, GameState, Inventory, Keeper, Lot, SeasonLength } from './types'
 
 export const SAVE_KEY = 'yes-lemonade-startup-v1'
 
@@ -26,6 +26,8 @@ export function normalizeSave(value: unknown): GameState | null {
     ...value,
     keeper,
     inventory: stampPurchaseDay(value.inventory, value.day),
+    shelf: normalizeShelf(value.shelf, value.day),
+    arrivals: normalizeArrivals(value.arrivals),
     history: value.history.map((day) => ({
       ...day,
       spoilLemonsQty: day.spoilLemonsQty ?? 0,
@@ -34,6 +36,24 @@ export function normalizeSave(value: unknown): GameState | null {
       spoilSugarCents: day.spoilSugarCents ?? 0,
     })),
   }
+}
+
+function normalizeShelf(value: DayShelf | null | undefined, day: number): DayShelf | null {
+  if (!value || typeof value !== 'object' || typeof value.cashAfterFeesCents !== 'number' || !value.inventory) return null
+  return { cashAfterFeesCents: value.cashAfterFeesCents, inventory: stampPurchaseDay(value.inventory, day) }
+}
+
+function normalizeArrivals(value: Arrival[] | null | undefined): Arrival[] | null {
+  if (!Array.isArray(value)) return null
+  const arrivals = value.filter(
+    (row) =>
+      !!row &&
+      (row.kind === 'buy' || row.kind === 'pass' || row.kind === 'out') &&
+      typeof row.take === 'number' &&
+      typeof row.weight === 'number' &&
+      typeof row.arrive === 'number',
+  )
+  return arrivals.length === value.length ? arrivals : null
 }
 
 function stampPurchaseDay(inv: Inventory, day: number): Inventory {

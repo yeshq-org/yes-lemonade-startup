@@ -12,9 +12,10 @@ const STEPS: { id: Phase; label: string }[] = [
   { id: 'report', label: 'Report' },
 ]
 
-export function Header({ onTitle }: { onTitle: () => void }) {
+export function Header({ onTitle, cashCents }: { onTitle: () => void; cashCents?: number }) {
   const { state } = useGame()
   if (!state) return null
+  const cash = cashCents ?? state.cashCents
   const showSteps = state.phase !== 'career'
   return (
     <header className="sticky top-0 z-20 border-b border-line/80 bg-cream/95 backdrop-blur-md">
@@ -29,9 +30,9 @@ export function Header({ onTitle }: { onTitle: () => void }) {
           </p>
         </div>
         <div className="text-right">
-          <p className="text-xs font-bold tracking-[0.14em] text-ink-soft">{state.cashCents < 0 ? 'IN THE HOLE' : 'CASH'}</p>
-          <p className={cx('font-display text-xl leading-none font-semibold', state.cashCents < 0 && 'text-coral')}>
-            {formatMoney(state.cashCents)}
+          <p className="text-xs font-bold tracking-[0.14em] text-ink-soft">{cash < 0 ? 'IN THE HOLE' : 'CASH'}</p>
+          <p className={cx('font-display text-xl leading-none font-semibold', cash < 0 && 'text-coral')} data-testid="cash-readout">
+            {formatMoney(cash)}
           </p>
         </div>
         <button type="button" onClick={onTitle} className="min-h-11 rounded-xl px-2 text-sm font-semibold text-teal">

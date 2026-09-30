@@ -1,19 +1,11 @@
+import { buyRate } from './demand'
 import { formatMoney } from './money'
-import type { DayResult } from './types'
+import type { Arrival, DayResult } from './types'
 
 export type PedKind = 'buy' | 'pass' | 'out'
+export type Pedestrian = Arrival
 
-export interface Pedestrian {
-  id: number
-  kind: PedKind
-  /** Spoken after a sip, or a short sold-out line. Walkers stay quiet. */
-  comment: string | null
-  look: number
-  start: number
-  arrive: number
-  depart: number
-  end: number
-}
+const OUT_LINE = 'I wanted a cup. You are already out.'
 
 export interface SidewalkCast {
   people: Pedestrian[]
@@ -39,9 +31,9 @@ function tasteLine(result: DayResult): string {
   return 'I drank it, but the recipe tastes unfinished.'
 }
 
-function priceLine(result: DayResult): string {
-  const price = formatMoney(result.recipe.priceCents)
-  const ratio = result.recipe.priceCents / Math.max(1, result.fairPriceCents)
+function priceLine(result: DayResult, priceCents = result.recipe.priceCents): string {
+  const price = formatMoney(priceCents)
+  const ratio = priceCents / Math.max(1, result.fairPriceCents)
   if (ratio < 0.8) return `${price} is a bargain. I would have paid more for this.`
   if (ratio <= 1.15) return `${price} feels fair now that the cup is empty.`
   return `${price} is a lot once you have already swallowed it.`
@@ -64,46 +56,229 @@ function weatherLine(result: DayResult): string {
   return 'Good thing I was already walking by.'
 }
 
-function castKinds(result: DayResult): PedKind[] {
-  if (result.hours <= 0 || (result.sold <= 0 && result.soldOutMissed <= 0)) return ['pass', 'pass', 'pass']
+const BUY_CAP = 8
+const PASS_CAP = 5
+const OUT_CAP = 3
+
+function splitEvenly(total: number, parts: number): number[] {
+  if (parts <= 0) return []
+  const base = Math.floor(total / parts)
+  const extra = total - base * parts
+  return Array.from({ length: parts }, (_, index) => base + (index < extra ? 1 : 0))
+}
+
+function slotCount(total: number, cap: number): number {
+  if (total <= 0) return 0
+  return Math.min(total, cap)
+}
+
+/** Buyers and walkers alternate, then people who find the stand empty. */
+function kindSequence(buySlots: number, passSlots: number, outSlots: number): PedKind[] {
   const kinds: PedKind[] = []
-  if (result.sold > 0) kinds.push('buy', 'pass', 'buy', 'pass')
-  else kinds.push('pass', 'out', 'pass')
-  if (result.soldOutMissed > 0) kinds.push('out')
-  else if (result.sold > 0) kinds.push('buy')
-  kinds.push('pass')
+  let buys = buySlots
+  let passes = passSlots
+  if (buys > 0) {
+    kinds.push('buy')
+    buys -= 1
+    if (passes > 0) {
+      kinds.push('pass')
+      passes -= 1
+    }
+  }
+  while (buys > 0 || passes > 0) {
+    if (buys > 0) {
+      kinds.push('buy')
+      buys -= 1
+    }
+    if (passes > 0) {
+      kinds.push('pass')
+      passes -= 1
+    }
+  }
+  for (let index = 0; index < outSlots; index += 1) kinds.push('out')
   return kinds
 }
 
-function schedule(kind: PedKind, id: number, start: number, comment: string | null): Pedestrian {
+function commentFor(result: DayResult, kind: PedKind, priceCents: number, buyerIndex: number): string | null {
+  if (kind === 'out') return OUT_LINE
+  if (kind !== 'buy') return null
+  const lines = [tasteLine(result), priceLine(result, priceCents), iceLine(result), weatherLine(result)]
+  return lines[buyerIndex % lines.length]!
+}
+
+function schedule(
+  kind: PedKind,
+  id: number,
+  start: number,
+  comment: string | null,
+  weight: number,
+  priceCents: number,
+  counts: boolean,
+): Pedestrian {
+  const look = id % 6
   if (kind === 'pass') {
     const end = start + PASS_TRAVEL
-    return { id, kind, comment: null, look: id % 6, start, arrive: end, depart: end, end }
+    const cross = start + PASS_TRAVEL * 0.46
+    return {
+      id,
+      kind,
+      comment,
+      look,
+      weight,
+      priceCents,
+      counts,
+      start,
+      arrive: cross,
+      reach: cross,
+      take: cross,
+      depart: end,
+      end,
+    }
   }
-  const hold = kind === 'buy' ? BUY_HOLD : OUT_HOLD
   const arrive = start + APPROACH
-  const depart = arrive + hold
+  const take = kind === 'buy' ? arrive + 1.15 : arrive
+  const hold = kind === 'buy' ? BUY_HOLD : OUT_HOLD
+  const depart = (kind === 'buy' ? take : arrive) + hold
   const end = depart + LEAVE
-  return { id, kind, comment, look: id % 6, start, arrive, depart, end }
+  return {
+    id,
+    kind,
+    comment,
+    look,
+    weight,
+    priceCents,
+    counts,
+    start,
+    arrive,
+    reach: arrive,
+    take,
+    depart,
+    end,
+  }
+}
+
+function scenery(startId: number): Pedestrian[] {
+  return [0, 1, 2].map((offset) =>
+    schedule('pass', startId + offset, 0.3 + offset * 1.6, null, 0, 0, false),
+  )
+}
+
+/**
+ * Figures for the sidewalk. Each one stands for one or more real customers so
+ * Served, Walked, and Sold out can tick when that figure finishes the action
+ * and still add up to the day.
+ */
+export function planCrowd(result: DayResult, startAt = 0.2, idStart = 1): Pedestrian[] {
+  if (result.potential <= 0 || (result.sold <= 0 && result.walkedAway <= 0 && result.soldOutMissed <= 0)) {
+    return scenery(idStart)
+  }
+  const buySlots = slotCount(result.sold, BUY_CAP)
+  const passSlots = slotCount(result.walkedAway, PASS_CAP)
+  const outSlots = slotCount(result.soldOutMissed, OUT_CAP)
+  const buyWeights = splitEvenly(result.sold, buySlots)
+  const passWeights = splitEvenly(result.walkedAway, passSlots)
+  const outWeights = splitEvenly(result.soldOutMissed, outSlots)
+  const kinds = kindSequence(buySlots, passSlots, outSlots)
+  let cursor = startAt
+  let id = idStart
+  let buyerIndex = 0
+  let buyCursor = 0
+  let passCursor = 0
+  let outCursor = 0
+  const price = result.recipe.priceCents
+  const crowd = kinds.map((kind) => {
+    const weight = kind === 'buy' ? buyWeights[buyCursor++]! : kind === 'pass' ? passWeights[passCursor++]! : outWeights[outCursor++]!
+    const comment = commentFor(result, kind, price, buyerIndex)
+    if (kind === 'buy') buyerIndex += 1
+    const person = schedule(kind, id, cursor, comment, weight, price, true)
+    id += 1
+    cursor += kind === 'pass' ? 0.9 : kind === 'buy' ? 1.32 : 1.15
+    return person
+  })
+  if (passSlots === 0 && buySlots > 0) {
+    crowd.splice(1, 0, schedule('pass', id, Math.max(startAt + 0.35, cursor * 0.15), null, 0, price, false))
+  }
+  return crowd
+}
+
+export interface Tally {
+  served: number
+  walked: number
+  missed: number
+  revenueCents: number
+}
+
+/** Counts only actions that have already happened by `time`. */
+export function tallyAt(people: Pedestrian[], time: number): Tally {
+  const tally: Tally = { served: 0, walked: 0, missed: 0, revenueCents: 0 }
+  for (const person of people) {
+    if (!person.counts || person.weight <= 0 || time < person.take) continue
+    if (person.kind === 'buy') {
+      tally.served += person.weight
+      tally.revenueCents += person.weight * person.priceCents
+    } else if (person.kind === 'pass') tally.walked += person.weight
+    else tally.missed += person.weight
+  }
+  return tally
+}
+
+/**
+ * People who have not reached the stand yet are rescripted at the new price.
+ * Anyone already there keeps the price they walked up to.
+ */
+export function reviseCrowd(people: Pedestrian[], time: number, newPrice: number, pending: DayResult): Pedestrian[] {
+  const locked = people.filter((person) => person.counts && person.arrive <= time)
+  const future = people.filter((person) => person.counts && person.arrive > time)
+  const decor = people.filter((person) => !person.counts)
+  if (future.length === 0) return people
+  if (future.every((person) => person.priceCents === newPrice)) return people
+
+  const lockedSold = locked.filter((person) => person.kind === 'buy').reduce((sum, person) => sum + person.weight, 0)
+  const remaining = future.reduce((sum, person) => sum + person.weight, 0)
+  const cupsLeft = Math.max(0, pending.cupsReady - lockedSold)
+  const rate = buyRate(newPrice, Math.max(1, pending.fairPriceCents), pending.taste)
+  const willing = Math.min(remaining, Math.round(remaining * rate))
+  const sold = Math.min(willing, cupsLeft)
+  const missed = willing - sold
+  const walked = remaining - willing
+  const nextId = Math.max(0, ...people.map((person) => person.id)) + 1
+  const earliest = Math.min(...future.map((person) => person.start))
+  const startAt = Math.max(earliest, time + 0.05)
+  const fresh = planFromCounts(pending, sold, walked, missed, newPrice, startAt, nextId)
+  return [...locked, ...fresh, ...decor].sort((a, b) => a.id - b.id)
+}
+
+function planFromCounts(
+  result: DayResult,
+  sold: number,
+  walked: number,
+  missed: number,
+  priceCents: number,
+  startAt: number,
+  idStart: number,
+): Pedestrian[] {
+  if (sold <= 0 && walked <= 0 && missed <= 0) return []
+  const shaped: DayResult = {
+    ...result,
+    sold,
+    walkedAway: walked,
+    soldOutMissed: missed,
+    potential: sold + walked + missed,
+    recipe: { ...result.recipe, priceCents },
+  }
+  return planCrowd(shaped, startAt, idStart)
 }
 
 /** A short cast for the sidewalk. Real totals stay on the receipt; this is the crowd you watch. */
 export function buildSidewalk(result: DayResult): SidewalkCast {
-  const comments = buyerComments(result)
-  let cursor = 0.1
-  let buyerIndex = 0
-  const people = castKinds(result).map((kind, id) => {
-    const comment = kind === 'buy' ? comments[buyerIndex++ % comments.length]! : kind === 'out' ? 'I wanted a cup. You are already out.' : null
-    const ped = schedule(kind, id, cursor, comment)
-    cursor += id === 0 ? 0.2 : kind === 'pass' ? 1.9 : 2.35
-    return ped
-  })
+  const people = planCrowd(result)
   const duration = Math.max(2, ...people.map((person) => person.end)) + 0.25
   return { people, duration }
 }
 
+/** Buyer stops with an outstretched hand at the cup on the right edge of the stand. */
 export function stopX(width: number): number {
-  return Math.max(150, Math.min(width * 0.44, width - 130))
+  return Math.max(148, Math.min(156, width - 130))
 }
 
 /** Horizontal position in the scene. Null when the person is offstage. */
