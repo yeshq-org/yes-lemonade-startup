@@ -187,7 +187,7 @@ function LemonadeStand({ price, closed, keeper, offering }: { price: string; clo
     <svg
       data-testid="lemonade-stand"
       viewBox="0 0 220 200"
-      className="absolute bottom-[6px] left-0 z-30 h-[160px] w-[176px]"
+      className="absolute bottom-[6px] left-0 z-10 h-[160px] w-[176px]"
       aria-hidden="true"
     >
       <path d="M8 0 h204 v14 H8 z" fill="#fff6e8" />
@@ -195,9 +195,6 @@ function LemonadeStand({ price, closed, keeper, offering }: { price: string; clo
         <rect key={stripe} x={8 + stripe * 22.6} y="0" width="12" height="14" fill="#0e5e59" />
       ))}
       <path d="M8 14 q15 7 30 0 q15 7 30 0 q15 7 30 0 q15 7 30 0 q15 7 30 0 q15 7 30 0 v4 H8 z" fill="#0e5e59" />
-      <text x="110" y="11" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="11" fontWeight="700" fill="#fffdfb">
-        LEMONADE
-      </text>
       <StandingSeller keeper={keeper} offering={offering} />
       <rect x="14" y="86" width="192" height="114" fill="#c9854a" />
       <rect x="14" y="86" width="10" height="114" fill="#8d5a34" />
@@ -209,6 +206,19 @@ function LemonadeStand({ price, closed, keeper, offering }: { price: string; clo
       <rect x="150" y="78" width="48" height="16" rx="4" fill="#ffe14a" />
       <text x="174" y="90" textAnchor="middle" fontFamily="Outfit, sans-serif" fontSize="12" fontWeight="700" fill="#1c1915">
         {price}
+      </text>
+      <rect x="28" y="0" width="164" height="20" rx="4" fill="#fffdfb" stroke="#0e5e59" strokeWidth="1.6" />
+      <text
+        x="110"
+        y="14"
+        textAnchor="middle"
+        fontFamily="Outfit, sans-serif"
+        fontSize="13"
+        fontWeight="700"
+        fill="#0e5e59"
+        data-testid="lemonade-sign"
+      >
+        LEMONADE
       </text>
       {closed && (
         <g>
