@@ -129,8 +129,8 @@ export function PersonFigure({
 }) {
   const walking = pose === 'walk' || pose === 'leave'
   const stride = walking ? (step ? 1 : -1) : 0
-  const nearShoulder = pose === 'reach' ? -108 - 18 * reach : pose === 'hold' || pose === 'leave' ? -18 : stride * -12
-  const nearElbow = pose === 'reach' ? -24 : pose === 'hold' || pose === 'leave' ? -14 : stride * 8
+  const nearShoulder = pose === 'reach' ? -72 - 16 * reach : pose === 'hold' || pose === 'leave' ? -18 : stride * -12
+  const nearElbow = pose === 'reach' ? -18 : pose === 'hold' || pose === 'leave' ? -14 : stride * 8
   const farShoulder = walking ? stride * 14 : 6
   const farElbow = walking ? stride * -8 : 4
 
@@ -237,25 +237,20 @@ const SELLER = {
   guy: { tone: '#c68642', shade: '#a56a30', lip: '#8d4a3c', iris: '#3a2414', hair: '#1c1915', style: 0 },
 } as const
 
-/** Seller standing on the high deck, in the stand's coordinate space. Feet stay above the buyers. */
+/** Seller from the chest up, behind the counter. Legs stay behind the stand's front cover. */
 export function StandingSeller({ keeper, offering }: { keeper: Keeper; offering: boolean }) {
   const look = SELLER[keeper]
   const shirt = keeper === 'girl' ? '#efe6d2' : '#31425c'
-  const pants = keeper === 'girl' ? '#2c3a4e' : '#243044'
   return (
     <g data-testid="stand-keeper" data-keeper={keeper}>
-      <path d="M52 164 h18 v14 h-20 q-1 0 -1 -2 z" fill="#2a211c" />
-      <path d="M84 164 h18 v14 h-20 q-1 0 -1 -2 z" fill="#241c18" />
-      <path d="M56 118 h12 v50 h-12 z" fill={pants} />
-      <path d="M86 118 h12 v50 h-12 z" fill={pants} />
-      <path d="M50 78 h52 l4 44 h-60 z" fill={shirt} />
-      <path d="M62 92 h28 v24 h-28 z" fill="#0e5e59" />
-      <path d="M70 76 h12 v10 h-12 z" fill={look.tone} />
+      <path d="M58 66 h52 l6 32 h-64 z" fill={shirt} />
+      <path d="M72 76 h28 v16 h-28 z" fill="#0e5e59" />
+      <path d="M78 62 h12 v8 h-12 z" fill={look.tone} />
       {offering ? (
         <g data-testid="keeper-offer">
-          <path d="M100 90 q26 -6 46 4" stroke={shirt} strokeWidth="8" strokeLinecap="round" fill="none" />
-          <path d="M144 94 q10 2 14 4" stroke={look.tone} strokeWidth="6" strokeLinecap="round" fill="none" />
-          <g transform="translate(162 92)">
+          <path d="M108 74 q28 -2 48 6" stroke={shirt} strokeWidth="8" strokeLinecap="round" fill="none" />
+          <path d="M154 80 q12 2 16 2" stroke={look.tone} strokeWidth="6" strokeLinecap="round" fill="none" />
+          <g transform="translate(174 76)">
             <path d="M-6 0 h13 l-1.5 11 h-10 z" fill="#ffe14a" stroke="#c98400" strokeWidth="0.9" />
             <ellipse cx="0.5" cy="0" rx="6.5" ry="2" fill="#fff6c2" />
             <ellipse cx="1" cy="6" rx="3.6" ry="2.4" fill={look.tone} />
@@ -263,16 +258,16 @@ export function StandingSeller({ keeper, offering }: { keeper: Keeper; offering:
         </g>
       ) : (
         <g>
-          <path d="M48 92 q-10 18 -6 30" stroke={shirt} strokeWidth="7" strokeLinecap="round" fill="none" />
-          <path d="M104 92 q10 18 6 30" stroke={shirt} strokeWidth="7" strokeLinecap="round" fill="none" />
-          <ellipse cx="42" cy="124" rx="5" ry="3.2" fill={look.tone} />
-          <ellipse cx="110" cy="124" rx="5" ry="3.2" fill={look.tone} />
+          <path d="M58 78 q-8 10 -4 16" stroke={shirt} strokeWidth="7" strokeLinecap="round" fill="none" />
+          <path d="M110 78 q8 10 4 16" stroke={shirt} strokeWidth="7" strokeLinecap="round" fill="none" />
+          <ellipse cx="54" cy="96" rx="5" ry="3" fill={look.tone} />
+          <ellipse cx="114" cy="96" rx="5" ry="3" fill={look.tone} />
         </g>
       )}
       <IllustratedHead
-        cx={76}
-        cy={54}
-        scale={0.92}
+        cx={84}
+        cy={42}
+        scale={0.86}
         skin={look.tone}
         shade={look.shade}
         lip={look.lip}
