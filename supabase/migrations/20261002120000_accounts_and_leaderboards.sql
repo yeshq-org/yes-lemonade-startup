@@ -111,8 +111,9 @@ create table public.scores (
 comment on table public.scores is
   'Leaderboard rank is net_cents descending. earnings_per_hour_cents is only a tie-breaker.';
 
+-- Clients read this order with LIMIT 100 (Top 100). Null hourly rates sort last among a tied net profit.
 create index scores_by_net_profit
-  on public.scores (competition_id, scoring_version, net_cents desc, earnings_per_hour_cents desc);
+  on public.scores (competition_id, scoring_version, net_cents desc, earnings_per_hour_cents desc nulls last);
 
 create or replace function public.is_admin()
 returns boolean

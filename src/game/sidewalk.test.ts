@@ -2,7 +2,20 @@ import { describe, expect, it } from 'vitest'
 import { settleCrowd } from './crowd'
 import { addStock, emptyInventory } from './inventory'
 import { simulateDay } from './simulate'
-import { buildSidewalk, buyerComments, crowdProgress, pedestrianX, reviseCrowd, sidewalkClock, tallyAt } from './sidewalk'
+import {
+  buildSidewalk,
+  BUY_COMMENT_HOLD_SEC,
+  buyerComments,
+  COMMENT_LINGER_SEC,
+  commentDurationSec,
+  commentVisible,
+  crowdProgress,
+  OUT_COMMENT_HOLD_SEC,
+  pedestrianX,
+  reviseCrowd,
+  sidewalkClock,
+  tallyAt,
+} from './sidewalk'
 import type { DayResult, Recipe, Weather } from './types'
 
 const weather: Weather = { heat: 'hot', sky: 'clear', tempF: 94 }
@@ -46,6 +59,22 @@ function day(overrides: Partial<DayResult> = {}): DayResult {
   }
 }
 
+describe('sidewalk comments', () => {
+  it('keeps the popup up 0.9s after the person starts to leave', () => {
+    expect(BUY_COMMENT_HOLD_SEC).toBe(2.5)
+    expect(OUT_COMMENT_HOLD_SEC).toBe(1.45)
+    expect(COMMENT_LINGER_SEC).toBe(0.9)
+    expect(commentDurationSec('buy')).toBeCloseTo(3.4)
+    expect(commentDurationSec('out')).toBeCloseTo(2.35)
+    const buyer = buildSidewalk(day()).people.find((person) => person.kind === 'buy')!
+    expect(buyer.depart - buyer.take).toBeCloseTo(2.5)
+    expect(commentVisible(buyer, buyer.take)).toBe(true)
+    expect(commentVisible(buyer, buyer.depart)).toBe(true)
+    expect(commentVisible(buyer, buyer.depart + 0.9)).toBe(true)
+    expect(commentVisible(buyer, buyer.depart + 0.91)).toBe(false)
+  })
+})
+
 describe('sidewalk cast', () => {
   it('stops a buyer at the stand while someone is still walking past', () => {
     const cast = buildSidewalk(day())
@@ -72,9 +101,23 @@ describe('sidewalk cast', () => {
       weather: { heat: 'hot', sky: 'clear', tempF: 96 },
     })
     const lines = buyerComments(sweet)
-    expect(lines[0]).toMatch(/sweet/i)
-    expect(lines.join(' ')).toContain('$2.50')
-    expect(lines.join(' ')).toMatch(/ice/i)
+    expect(lines[0]).toBe('Too sweet.')
+    expect(lines[1]).toBe('Too expensive. $2.50.')
+    expect(lines[2]).toBe('Not enough ice.')
+    expect(lines[3]).toMatch(/not good/i)
+    const balanced = buyerComments(day())
+    expect(balanced[0]).toBe('Great lemonade!')
+    expect(balanced[2]).toBe('Love the ice!')
+    const sour = buyerComments(
+      day({
+        recipe: { lemons: 8, sugar: 2, ice: 6, priceCents: 100 },
+        taste: 20,
+      }),
+    )
+    expect(sour[0]).toBe('Too sour.')
+    const later = buildSidewalk(day()).people.filter((person) => person.kind === 'buy')
+    expect(later[0]?.comment).toBe('Great lemonade!')
+    expect(later[4]?.comment).toBe('Love this cup!')
     const cast = buildSidewalk(sweet)
     expect(cast.people.some((person) => person.kind === 'pass')).toBe(true)
     expect(cast.people.some((person) => person.kind === 'buy' && person.comment)).toBe(true)

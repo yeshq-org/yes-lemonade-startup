@@ -6,6 +6,9 @@ export const SCORING_VERSION = 1
 export const PUBLIC_INDIVIDUAL_ID = '00000000-0000-4000-8000-000000000007'
 export const PUBLIC_TEAM_ID = '00000000-0000-4000-8000-000000000030'
 
+/** Public and private boards both stop here. The query uses this limit, not only the screen. */
+export const BOARD_LIMIT = 100
+
 export function daysForMode(mode: GameMode): 7 | 30 {
   return mode === 'individual_7' ? 7 : 30
 }
@@ -45,4 +48,9 @@ export function rankScores<T extends RankedScore>(rows: T[]): T[] {
     if (a.netCents !== b.netCents) return b.netCents - a.netCents
     return (b.earningsPerHourCents ?? Number.NEGATIVE_INFINITY) - (a.earningsPerHourCents ?? Number.NEGATIVE_INFINITY)
   })
+}
+
+/** Highest net profit first, then at most `limit` rows. */
+export function topBoard<T extends RankedScore>(rows: T[], limit = BOARD_LIMIT): T[] {
+  return rankScores(rows).slice(0, limit)
 }

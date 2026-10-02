@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createGame } from './setup'
 import { normalizeSave } from './storage'
-import { cleanDisplayName, daysForMode, normalizeJoinCode, rankScores, SCORING_VERSION } from './leaderboard'
+import { BOARD_LIMIT, cleanDisplayName, daysForMode, normalizeJoinCode, rankScores, SCORING_VERSION, topBoard } from './leaderboard'
 
 describe('leaderboard rank', () => {
   it('orders by net profit, then earnings per hour', () => {
@@ -17,6 +17,20 @@ describe('leaderboard rank', () => {
       'same-net-missing-hour',
       'low-net-high-hour',
     ])
+  })
+
+  it('keeps only the top 100 after ranking', () => {
+    const rows = Array.from({ length: 120 }, (_, index) => ({
+      name: `player-${index}`,
+      netCents: index,
+      earningsPerHourCents: index % 2 === 0 ? null : 10,
+    }))
+    const board = topBoard(rows)
+    expect(BOARD_LIMIT).toBe(100)
+    expect(board).toHaveLength(100)
+    expect(board[0]?.netCents).toBe(119)
+    expect(board[99]?.netCents).toBe(20)
+    expect(board.some((row) => row.netCents < 20)).toBe(false)
   })
 })
 

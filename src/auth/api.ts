@@ -1,7 +1,7 @@
 import { summarize } from '../game/scoring'
 import type { GameMode, GameState } from '../game/types'
 import { supabase } from '../lib/supabase'
-import { normalizeJoinCode, SCORING_VERSION } from '../game/leaderboard'
+import { BOARD_LIMIT, normalizeJoinCode, SCORING_VERSION } from '../game/leaderboard'
 
 export interface CompetitionRow {
   id: string
@@ -150,6 +150,9 @@ export async function loadBoard(competitionId: string): Promise<ScoreRow[]> {
     .select('id, display_name, team_name, net_cents, earnings_per_hour_cents, revenue_cents, mode, scoring_version, competition_id')
     .eq('competition_id', competitionId)
     .eq('scoring_version', SCORING_VERSION)
+    .order('net_cents', { ascending: false })
+    .order('earnings_per_hour_cents', { ascending: false, nullsFirst: false })
+    .limit(BOARD_LIMIT)
   if (error) throw error
   return (data ?? []) as ScoreRow[]
 }

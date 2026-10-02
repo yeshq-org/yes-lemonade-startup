@@ -1,7 +1,9 @@
+import { useRef, useState } from 'react'
 import { BUSINESS_QUESTION, REFLECTIONS, seasonVerdict } from '../../game/coach'
 import { STARTING_CASH_CENTS } from '../../game/constants'
 import { formatHourly, formatMoney } from '../../game/money'
 import { chainFromSummary, summarize, TIER_META } from '../../game/scoring'
+import { appendTranscript, speechAvailable, startTalk, stopTalk } from '../../game/speech'
 import { weekdayName } from '../../game/weather'
 import { useGame } from '../../state/GameContext'
 import { Chain } from '../Chain'
@@ -108,18 +110,21 @@ export function Career({ onTitle, onNewSeason }: { onTitle: () => void; onNewSea
         <section>
           <h2 className="font-display text-2xl font-semibold">Sit with it</h2>
           <p className="mt-1 text-sm text-ink-soft">Nobody grades these. They save on this device with your season.</p>
+          <p className="mt-1 text-sm text-ink-soft">
+            {speechAvailable(typeof window === 'undefined' ? null : window)
+              ? 'Tap Talk, say your answer, then tap Stop. You can still edit the words.'
+              : 'Talk-to-type is not in this browser. You can still type.'}
+          </p>
           <div className="mt-3 space-y-4">
             {REFLECTIONS.map((prompt, index) => (
-              <label key={prompt.title} className="block">
-                <span className="font-semibold">{prompt.title}</span>
-                <span className="mt-1 block text-sm text-ink-soft">{prompt.prompt}</span>
-                <textarea
-                  className="mt-2 min-h-24 w-full rounded-2xl bg-card px-3 py-3 text-base shadow-[0_0_0_1.5px_#eadcc6]"
-                  maxLength={280}
-                  value={state.reflections[index] ?? ''}
-                  onChange={(event) => dispatch({ type: 'reflect', index: index as 0 | 1 | 2, text: event.target.value })}
-                />
-              </label>
+              <Reflection
+                key={prompt.title}
+                index={index as 0 | 1 | 2}
+                title={prompt.title}
+                prompt={prompt.prompt}
+                value={state.reflections[index] ?? ''}
+                onChange={(text) => dispatch({ type: 'reflect', index: index as 0 | 1 | 2, text })}
+              />
             ))}
           </div>
         </section>
@@ -128,6 +133,93 @@ export function Career({ onTitle, onNewSeason }: { onTitle: () => void; onNewSea
         <Button onClick={onNewSeason}>Run another season</Button>
       </Dock>
     </Shell>
+  )
+}
+
+function Reflection({
+  index,
+  title,
+  prompt,
+  value,
+  onChange,
+}: {
+  index: 0 | 1 | 2
+  title: string
+  prompt: string
+  value: string
+  onChange: (text: string) => void
+}) {
+  const canTalk = speechAvailable(typeof window === 'undefined' ? null : window)
+  const [listening, setListening] = useState(false)
+  const [note, setNote] = useState<string | null>(null)
+  const valueRef = useRef(value)
+  const token = useRef<object | null>(null)
+  valueRef.current = value
+  const fieldId = `reflection-${index}`
+
+  function toggle() {
+    if (listening) {
+      token.current = null
+      stopTalk()
+      setListening(false)
+      return
+    }
+    const mine = {}
+    token.current = mine
+    const started = startTalk({
+      onFinal: (said) => {
+        const next = appendTranscript(valueRef.current, said)
+        valueRef.current = next
+        onChange(next)
+      },
+      onEnd: () => {
+        if (token.current === mine) setListening(false)
+      },
+      onError: (message) => {
+        if (token.current !== mine) return
+        setListening(false)
+        setNote(message)
+      },
+    })
+    if (!started) {
+      setNote('Talk-to-type is not in this browser. You can still type.')
+      return
+    }
+    setNote(null)
+    setListening(true)
+  }
+
+  return (
+    <div>
+      <div className="flex items-start justify-between gap-3">
+        <label htmlFor={fieldId} className="block">
+          <span className="font-semibold">{title}</span>
+          <span className="mt-1 block text-sm text-ink-soft">{prompt}</span>
+        </label>
+        {canTalk && (
+          <button
+            type="button"
+            data-testid={`talk-${index}`}
+            aria-pressed={listening}
+            aria-label={listening ? 'Stop talking' : 'Talk to type this answer'}
+            onClick={toggle}
+            className="min-h-12 shrink-0 rounded-2xl bg-ink px-4 text-sm font-bold tracking-wide text-cream"
+          >
+            {listening ? 'Stop' : 'Talk'}
+          </button>
+        )}
+      </div>
+      <textarea
+        id={fieldId}
+        data-testid={fieldId}
+        className="mt-2 min-h-24 w-full rounded-2xl bg-card px-3 py-3 text-base shadow-[0_0_0_1.5px_#eadcc6]"
+        maxLength={280}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      {listening && <p className="mt-1 text-sm font-semibold text-teal">Listening… tap Stop when you are done.</p>}
+      {note && <p className="mt-1 text-sm text-ink-soft">{note}</p>}
+    </div>
   )
 }
 

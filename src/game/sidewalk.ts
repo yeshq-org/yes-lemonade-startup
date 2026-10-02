@@ -14,46 +14,73 @@ export interface SidewalkCast {
 
 const PASS_TRAVEL = 7.4
 const APPROACH = 1.5
-const BUY_HOLD = 2.5
-const OUT_HOLD = 1.45
+/** Buyer comment used to stay up only while they held the cup. */
+export const BUY_COMMENT_HOLD_SEC = 2.5
+/** Sold-out comment used to stay up only while they stood at an empty stand. */
+export const OUT_COMMENT_HOLD_SEC = 1.45
+/**
+ * Extra time the sidewalk comment stays after the person starts to leave.
+ * Buyer popup: 2500ms before, 3400ms now. Sold-out popup: 1450ms before, 2350ms now.
+ */
+export const COMMENT_LINGER_SEC = 0.9
 const LEAVE = 1.4
+
+export function commentDurationSec(kind: 'buy' | 'out'): number {
+  const hold = kind === 'buy' ? BUY_COMMENT_HOLD_SEC : OUT_COMMENT_HOLD_SEC
+  return hold + COMMENT_LINGER_SEC
+}
+
+export function commentVisible(person: { take: number; depart: number }, time: number): boolean {
+  return time >= person.take && time <= person.depart + COMMENT_LINGER_SEC
+}
+
+function pick(variant: number, lines: readonly string[]): string {
+  return lines[Math.abs(variant) % lines.length]!
+}
 
 export function buyerComments(result: DayResult): string[] {
   return [tasteLine(result), priceLine(result), iceLine(result), weatherLine(result)]
 }
 
-function tasteLine(result: DayResult): string {
+function tasteLine(result: DayResult, variant = 0): string {
   const { recipe, taste } = result
-  if (recipe.sugar >= recipe.lemons + 3) return 'Way too sweet. The sugar took over the cup.'
-  if (recipe.lemons >= recipe.sugar + 3) return 'That is sour. My whole face got involved.'
-  if (taste >= 85) return 'Bright and balanced. It tastes like real lemonade.'
-  if (taste >= 65) return 'Pretty good. Sweet and sour are close.'
-  return 'I drank it, but the recipe tastes unfinished.'
+  if (recipe.sugar >= recipe.lemons + 3) return pick(variant, ['Too sweet.', 'Way too sweet.'])
+  if (recipe.lemons >= recipe.sugar + 3) return pick(variant, ['Too sour.', 'Way too sour.'])
+  if (taste >= 85) return pick(variant, ['Great lemonade!', 'Love this cup!'])
+  if (taste >= 65) return pick(variant, ['Pretty good!', 'I like it!'])
+  return pick(variant, ['Not great.', 'Did not like it.'])
 }
 
-function priceLine(result: DayResult, priceCents = result.recipe.priceCents): string {
+function priceLine(result: DayResult, priceCents = result.recipe.priceCents, variant = 0): string {
   const price = formatMoney(priceCents)
   const ratio = priceCents / Math.max(1, result.fairPriceCents)
-  if (ratio < 0.8) return `${price} is a bargain. I would have paid more for this.`
-  if (ratio <= 1.15) return `${price} feels fair now that the cup is empty.`
-  return `${price} is a lot once you have already swallowed it.`
+  if (ratio < 0.8) return pick(variant, [`Love this price — ${price}!`, `A deal at ${price}!`])
+  if (ratio <= 1.15) return pick(variant, [`Fair price. ${price}.`, `Good price. ${price}.`])
+  return pick(variant, [`Too expensive. ${price}.`, `${price} is too much.`])
 }
 
-function iceLine(result: DayResult): string {
+function iceLine(result: DayResult, variant = 0): string {
   const { recipe, weather, iceComfort } = result
   const hot = weather.heat === 'hot' || weather.heat === 'warm'
   const cool = weather.heat === 'cold' || weather.heat === 'cool'
-  if (hot && recipe.ice <= 1) return 'Not enough ice. The day is warmer than the cup.'
-  if (cool && recipe.ice >= 6) return 'Too much ice for this weather. I mostly drank cold water.'
-  if (iceComfort >= 85) return hot ? 'That ice belongs on a hot sidewalk.' : 'The chill fits the day.'
-  return 'The ice is a little off for this sky.'
+  if (hot && recipe.ice <= 1) return pick(variant, ['Not enough ice.', 'Needs more ice.'])
+  if (cool && recipe.ice >= 6) return pick(variant, ['Too much ice.', 'Way too much ice.'])
+  if (iceComfort >= 85) return pick(variant, ['Love the ice!', 'The ice is perfect!'])
+  return pick(variant, ['The ice is off.', 'Did not like the ice.'])
 }
 
-function weatherLine(result: DayResult): string {
-  if (result.weather.sky === 'rain') return 'I stood in the rain to finish that.'
-  if (result.weather.heat === 'hot' && result.weather.sky === 'clear') return 'Hot street, cold cup. That is why I stopped.'
-  if (result.weather.heat === 'cold') return 'Cold day for lemonade. I still finished it.'
-  return 'Good thing I was already walking by.'
+function weatherLine(result: DayResult, variant = 0): string {
+  const liked = result.taste >= 65
+  if (result.weather.sky === 'rain') {
+    return liked ? pick(variant, ['Worth the rain!', 'Liked it in the rain!']) : pick(variant, ['Not worth the rain.', 'Rain, and I did not like it.'])
+  }
+  if (result.weather.heat === 'hot' && result.weather.sky === 'clear') {
+    return liked ? pick(variant, ['Perfect on a hot day!', 'Loved it in this heat!']) : pick(variant, ['Hot day. Still not good.', 'Not good, even in this heat.'])
+  }
+  if (result.weather.heat === 'cold') {
+    return liked ? pick(variant, ['Liked it in the cold!', 'Good, even on a cold day!']) : pick(variant, ['Did not like it in the cold.', 'Cold day, and not good.'])
+  }
+  return liked ? pick(variant, ['Glad I stopped!', 'Liked it!']) : pick(variant, ['Should have kept walking.', 'Did not like it.'])
 }
 
 const BUY_CAP = 8
@@ -102,7 +129,13 @@ function kindSequence(buySlots: number, passSlots: number, outSlots: number): Pe
 function commentFor(result: DayResult, kind: PedKind, priceCents: number, buyerIndex: number): string | null {
   if (kind === 'out') return OUT_LINE
   if (kind !== 'buy') return null
-  const lines = [tasteLine(result), priceLine(result, priceCents), iceLine(result), weatherLine(result)]
+  const variant = Math.floor(buyerIndex / 4)
+  const lines = [
+    tasteLine(result, variant),
+    priceLine(result, priceCents, variant),
+    iceLine(result, variant),
+    weatherLine(result, variant),
+  ]
   return lines[buyerIndex % lines.length]!
 }
 
@@ -137,7 +170,7 @@ function schedule(
   }
   const arrive = start + APPROACH
   const take = kind === 'buy' ? arrive + 1.15 : arrive
-  const hold = kind === 'buy' ? BUY_HOLD : OUT_HOLD
+  const hold = kind === 'buy' ? BUY_COMMENT_HOLD_SEC : OUT_COMMENT_HOLD_SEC
   const depart = (kind === 'buy' ? take : arrive) + hold
   const end = depart + LEAVE
   return {

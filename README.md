@@ -39,7 +39,7 @@ If those env vars are missing, the app shows **Accounts are not configured** and
 5. Set the recipe and the price. Every sales day is 8 hours (9:00am to 5:00pm on the sidewalk). That is not a separate choice.
 6. Watch the street, then read the receipt. A finished season is posted to that competition’s board.
 
-Leaderboards are separate: Public Individual, Public Team, and each private competition. Rank is **net profit**, highest first. Earnings per hour only breaks a tie.
+Leaderboards are separate: Public Individual, Public Team, and each private competition. Rank is **net profit**, highest first. Earnings per hour only breaks a tie. Every board, including a private one, loads at most the **Top 100** (`BOARD_LIMIT` on the query, not only on the screen).
 
 On a team, one person runs the current day. After that day is reported, any teammate can take the next morning. Two people do not edit the same day at once.
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { formatMoney } from '../game/money'
-import { crowdProgress, pedestrianX, sidewalkClock, stillFigures, type Pedestrian, type SidewalkCast } from '../game/sidewalk'
+import { commentVisible, crowdProgress, pedestrianX, sidewalkClock, stillFigures, type Pedestrian, type SidewalkCast } from '../game/sidewalk'
 import type { DayResult, Keeper } from '../game/types'
 import { weatherReadout } from '../game/weather'
 import { skyColors } from './art'
@@ -44,7 +44,7 @@ export function SidewalkDay({
     ? (cast.people.find((person) => person.kind === 'buy' && person.comment) ??
       cast.people.find((person) => person.kind === 'out' && person.comment) ??
       null)
-    : (cast.people.find((person) => person.comment && elapsed >= person.take && elapsed <= person.depart) ?? null)
+    : (cast.people.find((person) => person.comment && commentVisible(person, elapsed)) ?? null)
   const [skyTop, skyBottom] = skyColors(result.weather)
   const closed = result.hours <= 0
   const progress = crowdProgress(cast.people, finished ? cast.duration : elapsed)

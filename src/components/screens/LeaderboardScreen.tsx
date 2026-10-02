@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { errorText, listMyPrivateCompetitions, loadBoard, type CompetitionRow, type ScoreRow } from '../../auth/api'
 import { useAccount } from '../../auth/AccountContext'
-import { PUBLIC_INDIVIDUAL_ID, PUBLIC_TEAM_ID, rankScores } from '../../game/leaderboard'
+import { PUBLIC_INDIVIDUAL_ID, PUBLIC_TEAM_ID, topBoard } from '../../game/leaderboard'
 import { formatHourly, formatMoney } from '../../game/money'
 import { accountsConfigured } from '../../lib/supabase'
 import { Button, Shell, useFocusHeading } from '../ui'
@@ -30,7 +30,7 @@ export function LeaderboardScreen({ onBack }: { onBack: () => void }) {
     loadBoard(competitionId)
       .then((loaded) =>
         setRows(
-          rankScores(
+          topBoard(
             loaded.map((row) => ({
               ...row,
               netCents: row.net_cents,
@@ -51,7 +51,11 @@ export function LeaderboardScreen({ onBack }: { onBack: () => void }) {
         <h1 ref={heading} tabIndex={-1} className="mt-2 font-display text-4xl font-semibold outline-none">
           Leaderboard
         </h1>
-        <p className="mt-2 text-ink-soft">Ranked by net profit. Earnings per hour only breaks a tie. Names only — never emails.</p>
+        <p className="mt-2 font-display text-2xl font-semibold">Top 100</p>
+        <p className="mt-1 text-ink-soft">
+          Ranked by net profit. Earnings per hour only breaks a tie. Public and private boards both stop at 100. Names only — never
+          emails.
+        </p>
         {!accountsConfigured() && (
           <p className="mt-4 font-semibold">Accounts are not configured, so there is no shared board yet.</p>
         )}
