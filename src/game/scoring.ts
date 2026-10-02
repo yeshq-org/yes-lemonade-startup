@@ -76,6 +76,7 @@ export function summarize(state: GameState): SeasonSummary {
   const totalOtherCents = days.reduce((sum, day) => sum + day.otherCents, 0)
   const totalNetCents = days.reduce((sum, day) => sum + day.netCents, 0)
   const totalHours = days.reduce((sum, day) => sum + day.hours, 0)
+  // Receipt and tiers use earnings per hour. Leaderboards rank by net profit, then this figure only breaks a tie.
   const earningsPerHourCents = totalHours > 0 ? roundHalfAway(totalNetCents / totalHours) : null
   const inventoryCents = inventoryValueCents(state.inventory)
   const netWorthCents = state.cashCents + inventoryCents

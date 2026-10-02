@@ -2,6 +2,7 @@ import { formatMoney } from '../game/money'
 import type { Phase } from '../game/types'
 import { weekdayName } from '../game/weather'
 import { useGame } from '../state/GameContext'
+import { useNav } from '../state/NavContext'
 import { cx } from './ui'
 
 const STEPS: { id: Phase; label: string }[] = [
@@ -14,7 +15,9 @@ const STEPS: { id: Phase; label: string }[] = [
 
 export function Header({ onTitle, cashCents }: { onTitle: () => void; cashCents?: number }) {
   const { state } = useGame()
+  const nav = useNav()
   if (!state) return null
+  const openBoard = nav?.onLeaderboard
   const cash = cashCents ?? state.cashCents
   const showSteps = state.phase !== 'career'
   return (
@@ -39,6 +42,18 @@ export function Header({ onTitle, cashCents }: { onTitle: () => void; cashCents?
           Title
         </button>
       </div>
+      {openBoard && (
+        <div className="px-4 pb-2">
+          <button
+            type="button"
+            data-testid="leaderboard-nav"
+            onClick={openBoard}
+            className="min-h-11 w-full rounded-2xl bg-ink text-sm font-bold tracking-[0.14em] text-cream"
+          >
+            LEADERBOARD
+          </button>
+        </div>
+      )}
       {showSteps && (
         <nav aria-label="Today" className="px-4 pb-2">
           <ol className="grid grid-cols-5 gap-1">

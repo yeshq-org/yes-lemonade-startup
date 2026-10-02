@@ -1,19 +1,21 @@
-import { Component, useEffect, useState, type ReactNode } from 'react'
+import { Component, useState, type ReactNode } from 'react'
+import { AccountProvider, useAccount } from './auth/AccountContext'
+import { GameSync } from './auth/GameSync'
 import { Career } from './components/screens/Career'
 import { HowTo } from './components/screens/HowTo'
+import { LeaderboardScreen } from './components/screens/LeaderboardScreen'
+import { LoginScreen } from './components/screens/LoginScreen'
+import { AccountsOff } from './components/screens/AccountsOff'
 import { Morning } from './components/screens/Morning'
 import { Recipe } from './components/screens/Recipe'
 import { Report } from './components/screens/Report'
-import { Season } from './components/screens/Season'
 import { Selling } from './components/screens/Selling'
+import { SetupScreen } from './components/screens/SetupScreen'
 import { Shop } from './components/screens/Shop'
-import { Splash } from './components/screens/Splash'
 import { Button, Shell } from './components/ui'
 import { SAVE_KEY } from './game/storage'
-import type { Keeper } from './game/types'
 import { GameProvider, useGame } from './state/GameContext'
-
-type Gate = 'splash' | 'howto' | 'season' | 'play'
+import { NavContext } from './state/NavContext'
 
 interface BoundaryState {
   error: Error | null
@@ -58,48 +60,79 @@ class ErrorBoundary extends Component<{ children: ReactNode }, BoundaryState> {
 export default function App() {
   return (
     <ErrorBoundary>
-      <GameProvider>
-        <Root />
-      </GameProvider>
+      <AccountProvider>
+        <GameProvider>
+          <GameSync />
+          <Root />
+        </GameProvider>
+      </AccountProvider>
     </ErrorBoundary>
   )
 }
 
+type Screen = 'gate' | 'howto' | 'play' | 'board'
+
 function Root() {
   const { state } = useGame()
-  const [gate, setGate] = useState<Gate>('splash')
-  const [keeper, setKeeper] = useState<Keeper>('girl')
+  const { configured, ready, profileReady, session, profile } = useAccount()
+  const [screen, setScreen] = useState<Screen>('gate')
+  const [boardBack, setBoardBack] = useState<'gate' | 'play'>('gate')
 
-  useEffect(() => {
-    if (!state && gate === 'play') setGate('splash')
-  }, [state, gate])
-
-  useEffect(() => {
-    if (gate !== 'play' || !state) {
-      document.title = 'Y.E.S. Lemonade Startup'
-      return
-    }
-    document.title =
-      state.phase === 'career' ? 'Season report · Y.E.S. Lemonade Startup' : `Day ${state.day} · Y.E.S. Lemonade Startup`
-  }, [gate, state])
-
-  if (gate === 'howto') return <HowTo onDone={() => setGate('season')} />
-  if (gate === 'season') {
-    return <Season keeper={keeper} onBack={() => setGate(state ? 'play' : 'splash')} onStart={() => setGate('play')} />
+  function openBoard(from: 'gate' | 'play') {
+    setBoardBack(from)
+    setScreen('board')
   }
-  if (gate !== 'play' || !state) {
-    return (
-      <Splash
-        onStart={(choice) => {
-          setKeeper(choice)
-          setGate('howto')
-        }}
-        onContinue={() => setGate('play')}
+
+  const nav = {
+    onTitle: () => setScreen('gate'),
+    onLeaderboard: () => openBoard(screen === 'play' ? 'play' : 'gate'),
+  }
+
+  let body: ReactNode
+  if (!configured) {
+    body =
+      screen === 'board' ? (
+        <LeaderboardScreen onBack={() => setScreen(boardBack)} />
+      ) : screen === 'play' && state ? (
+        <Play onTitle={() => setScreen('gate')} />
+      ) : (
+        <AccountsOff
+          onFinishLegacy={state && !state.mode ? () => setScreen('play') : null}
+          onLeaderboard={() => openBoard('gate')}
+        />
+      )
+  } else if (!ready || (session && !profileReady)) {
+    body = (
+      <Shell>
+        <main className="px-5 pt-16">
+          <p className="font-display text-3xl font-semibold">Opening the stand…</p>
+        </main>
+      </Shell>
+    )
+  } else if (!session || !profile) {
+    body = <LoginScreen />
+  } else if (screen === 'board') {
+    body = <LeaderboardScreen onBack={() => setScreen(boardBack)} />
+  } else if (screen === 'howto') {
+    body = <HowTo onDone={() => setScreen('play')} />
+  } else if (screen === 'play' && state) {
+    body = <Play onTitle={() => setScreen('gate')} />
+  } else {
+    body = (
+      <SetupScreen
+        onPlay={() => setScreen('play')}
+        onReadyForHowTo={() => setScreen('howto')}
+        onLeaderboard={() => openBoard('gate')}
       />
     )
   }
 
-  const onTitle = () => setGate('splash')
+  return <NavContext.Provider value={nav}>{body}</NavContext.Provider>
+}
+
+function Play({ onTitle }: { onTitle: () => void }) {
+  const { state } = useGame()
+  if (!state) return null
   switch (state.phase) {
     case 'morning':
       return <Morning onTitle={onTitle} />
@@ -112,16 +145,8 @@ function Root() {
     case 'report':
       return <Report onTitle={onTitle} />
     case 'career':
-      return <Career onTitle={onTitle} onNewSeason={() => setGate('splash')} />
+      return <Career onTitle={onTitle} onNewSeason={onTitle} />
     default:
-      return (
-        <Splash
-          onStart={(choice) => {
-            setKeeper(choice)
-            setGate('howto')
-          }}
-          onContinue={() => setGate('play')}
-        />
-      )
+      return null
   }
 }

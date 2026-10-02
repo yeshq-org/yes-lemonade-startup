@@ -1,5 +1,5 @@
 import { DAY_HOURS } from './constants'
-import type { Arrival, DayShelf, GameState, Inventory, Keeper, Lot, SeasonLength } from './types'
+import type { Arrival, DayShelf, GameMode, GameState, Inventory, Keeper, Lot, SeasonLength } from './types'
 
 export const SAVE_KEY = 'yes-lemonade-startup-v1'
 
@@ -23,10 +23,16 @@ function isGameState(value: unknown): value is GameState {
 export function normalizeSave(value: unknown): GameState | null {
   if (!isGameState(value)) return null
   const keeper: Keeper = value.keeper === 'guy' ? 'guy' : 'girl'
+  const mode: GameMode | null = value.mode === 'individual_7' || value.mode === 'team_30' ? value.mode : null
   return {
     ...value,
     hours: DAY_HOURS,
     keeper,
+    mode,
+    scoringVersion: mode && value.scoringVersion === 1 ? 1 : null,
+    competitionId: mode && typeof value.competitionId === 'string' ? value.competitionId : null,
+    gameId: mode && typeof value.gameId === 'string' ? value.gameId : null,
+    teamId: mode && typeof value.teamId === 'string' ? value.teamId : null,
     inventory: stampPurchaseDay(value.inventory, value.day),
     shelf: normalizeShelf(value.shelf, value.day),
     arrivals: normalizeArrivals(value.arrivals),

@@ -1,7 +1,9 @@
 export type Heat = 'hot' | 'warm' | 'cool' | 'cold'
 export type Sky = 'clear' | 'cloudy' | 'rain'
 export type ItemId = 'cups' | 'lemons' | 'sugar' | 'ice'
+/** 14 remains so a season saved before modes can still be finished on this device. New runs are 7 or 30. */
 export type SeasonLength = 7 | 14 | 30
+export type GameMode = 'individual_7' | 'team_30'
 export type Phase = 'morning' | 'shop' | 'recipe' | 'selling' | 'report' | 'career'
 export type Hours = 0 | 4 | 6 | 8 | 10 | 12
 
@@ -138,6 +140,16 @@ export interface GameState {
   /** Crowd currently scripted for the sidewalk. Null outside the selling phase. */
   arrivals: Arrival[] | null
   reflections: [string, string, string]
+  /**
+   * Null on a season saved before accounts. Those runs stay on this device and are not posted.
+   * New runs are individual_7 (7 days) or team_30 (30 days).
+   */
+  mode: GameMode | null
+  /** Matches SCORING_VERSION when this run can be posted. Null on a legacy local season. */
+  scoringVersion: number | null
+  competitionId: string | null
+  gameId: string | null
+  teamId: string | null
 }
 
 export const ITEM_IDS: ItemId[] = ['cups', 'lemons', 'sugar', 'ice']

@@ -3,13 +3,14 @@ import { DAY_HOURS, PRICE_MAX_CENTS, PRICE_MIN_CENTS } from '../game/constants'
 import { dayFees } from '../game/demand'
 import { applyCart, cartCostCents, cloneInventory, meltIce, spoilProduce } from '../game/inventory'
 import { simulateDay } from '../game/simulate'
-import { createGame } from '../game/setup'
+import { createGame, type RunMeta } from '../game/setup'
 import { planCrowd, reviseCrowd } from '../game/sidewalk'
 import type { CartLine, GameState, ItemId, Keeper, SeasonLength } from '../game/types'
 import { clamp } from '../game/util'
 
 export type Action =
-  | { type: 'start'; seasonDays: SeasonLength; seed: number; keeper: Keeper }
+  | { type: 'start'; seasonDays: SeasonLength; seed: number; keeper: Keeper; meta?: RunMeta | null }
+  | { type: 'hydrate'; state: GameState }
   | { type: 'abandon' }
   | { type: 'ack-morning' }
   | { type: 'add-pack'; item: ItemId; packIndex: number }
@@ -43,7 +44,8 @@ function withLine(cart: CartLine[], item: ItemId, packIndex: number, delta: numb
 
 export function reducer(state: GameState | null, action: Action): GameState | null {
   if (action.type === 'abandon') return null
-  if (action.type === 'start') return createGame(action.seasonDays, action.seed, action.keeper)
+  if (action.type === 'start') return createGame(action.seasonDays, action.seed, action.keeper, action.meta ?? null)
+  if (action.type === 'hydrate') return action.state
   if (!state) return state
 
   switch (action.type) {

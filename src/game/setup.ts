@@ -1,7 +1,7 @@
 import { STARTING_CASH_CENTS, STARTING_POPULARITY } from './constants'
 import { emptyInventory } from './inventory'
 import { mulberry32 } from './rng'
-import type { GameState, Keeper, Recipe, SeasonLength } from './types'
+import type { GameMode, GameState, Keeper, Recipe, SeasonLength } from './types'
 import { rollPrices, rollWeather } from './weather'
 
 export const DEFAULT_RECIPE: Recipe = {
@@ -11,7 +11,20 @@ export const DEFAULT_RECIPE: Recipe = {
   priceCents: 150,
 }
 
-export function createGame(seasonDays: SeasonLength, seed: number, keeper: Keeper = 'girl'): GameState {
+export interface RunMeta {
+  mode: GameMode
+  scoringVersion: number
+  competitionId: string
+  gameId: string
+  teamId: string | null
+}
+
+export function createGame(
+  seasonDays: SeasonLength,
+  seed: number,
+  keeper: Keeper = 'girl',
+  meta: RunMeta | null = null,
+): GameState {
   const rng = mulberry32(seed)
   const forecast = []
   const priceBook = []
@@ -39,5 +52,10 @@ export function createGame(seasonDays: SeasonLength, seed: number, keeper: Keepe
     shelf: null,
     arrivals: null,
     reflections: ['', '', ''],
+    mode: meta?.mode ?? null,
+    scoringVersion: meta?.scoringVersion ?? null,
+    competitionId: meta?.competitionId ?? null,
+    gameId: meta?.gameId ?? null,
+    teamId: meta?.teamId ?? null,
   }
 }

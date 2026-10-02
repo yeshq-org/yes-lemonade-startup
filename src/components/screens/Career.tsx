@@ -58,7 +58,13 @@ export function Career({ onTitle, onNewSeason }: { onTitle: () => void; onNewSea
           hourlyCents={summary.earningsPerHourCents}
         />
         <p className="text-center text-sm text-ink-soft">
-          Season earnings per hour are total net profit divided by 8 hours for each day the stand was open.
+          Season earnings per hour are total net profit divided by 8 hours for each day the stand was open. Leaderboards rank by net
+          profit. Earnings per hour only breaks a tie.
+        </p>
+        <p className="text-center text-sm text-ink-soft">
+          {state.gameId
+            ? 'This finished season is posted under your display name. Your email is not on the board.'
+            : 'This season stays on this device. It is not posted to a leaderboard.'}
         </p>
         <Chain stats={chainFromSummary(summary)} title="The season in one chain" />
         <div className="grid grid-cols-2 gap-2">
