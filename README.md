@@ -30,6 +30,28 @@ Apply `supabase/migrations/20261002120000_accounts_and_leaderboards.sql` in the 
 
 If those env vars are missing, the app shows **Accounts are not configured** and does not crash. A season already stored in `localStorage` (`yes-lemonade-startup-v1`) can be finished on this device. It is not posted to a board.
 
+Local `npm run dev` and `npm run build` use site base `/`. The Pages build sets `VITE_BASE=/yes-lemonade-startup/`.
+
+## Play it from a phone
+
+The project site is [https://yeshq-org.github.io/yes-lemonade-startup/](https://yeshq-org.github.io/yes-lemonade-startup/). That path matches a GitHub project page for this repo, not a user site at the domain root.
+
+The workflow is `.github/workflows/pages.yml`. It runs on a push to `cursor/yes-lemonade-startup-ab25` or `main`, and it can be started by hand. It builds with Vite and deploys with GitHub Actions. The game on this branch can go live **before the pull request is merged**, because the workflow listens to this branch.
+
+GitHub only accepts a Pages deploy from a workflow that exists on the repository’s **default branch**. `main` is still that default, and this workflow is not on `main` yet. To publish without merging:
+
+1. Settings → General → Default branch → `cursor/yes-lemonade-startup-ab25`.
+2. Settings → Pages → Build and deployment → Source: **GitHub Actions**. The site is currently set to deploy the old `gh-pages` branch. Switch that source, or the new workflow will not replace it.
+3. Settings → Secrets and variables → Actions → Repository secrets:
+   - `VITE_SUPABASE_URL` — the Supabase project URL
+   - `VITE_SUPABASE_ANON_KEY` — the anon public key
+   Leave them unset if you only want the accounts-off screen. Do not add the service-role key.
+4. Push this branch again, or run the “Deploy GitHub Pages” workflow from the Actions tab.
+
+After the pull request is merged, set the default branch back to `main` if you moved it. Pushes to `main` then publish the same URL.
+
+This agent cannot turn on Pages or write secrets. Those two settings stay with Allan.
+
 ## How a season works
 
 1. Sign in with email and a display name. The name is the only public identity. Email is never shown on a board.
@@ -57,6 +79,8 @@ The season report shows the same chain for the whole run, plus net worth, best a
 
 ## Design notes
 
+- Phone layout stays inside the screen in portrait (about 375–430px wide): no sideways scroll, 44px-or-taller controls, a shorter sticky header, and price buttons that wrap instead of sliding off the sidewalk. The scene uses the full column width. Desktop still uses the same centered column.
+- Career questions can use Talk where the browser has the Web Speech API. iPhone Safari usually has no recognizer, so those players type. If Talk does appear on an iPhone, the mic can stop after one phrase.
 - Mobile-first layout, also fine on a desktop browser.
 - Original interface and illustrations. The official Y.E.S. logo is in `public/brand/logo.png` and appears on the title screen and in the header.
 - Motion is decorative. `prefers-reduced-motion` skips the selling animation.

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { cleanDisplayName } from '../../game/leaderboard'
+import { publicUrl } from '../../lib/publicUrl'
 import { supabase } from '../../lib/supabase'
 import { errorText } from '../../auth/api'
 import { useAccount } from '../../auth/AccountContext'
@@ -68,7 +69,7 @@ export function LoginScreen() {
   return (
     <Shell>
       <main className="flex flex-1 flex-col px-5 pt-10 pb-8">
-        <img src="/brand/logo.png" alt="Y.E.S. Youth Entrepreneur Startup" className="mx-auto h-auto w-44" />
+        <img src={publicUrl('brand/logo.png')} alt="Y.E.S. Youth Entrepreneur Startup" className="mx-auto h-auto w-44 max-w-full" />
         <h1 ref={heading} tabIndex={-1} className="mt-6 font-display text-4xl leading-tight font-semibold outline-none">
           {mode === 'up' ? 'Create your account' : 'Sign in'}
         </h1>

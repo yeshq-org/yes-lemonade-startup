@@ -75,7 +75,7 @@ function ItemBlock({ item }: { item: ItemId }) {
           const inCart = state.cart.find((line) => line.item === item && line.packIndex === index)?.packs ?? 0
           const canAdd = state.cashCents - cartCostCents(state.cart, prices) >= price
           return (
-            <div key={pack.qty} className="flex items-center gap-2 rounded-2xl bg-card px-3 py-2 shadow-[0_0_0_1.5px_#eadcc6]">
+            <div key={pack.qty} className="flex min-w-0 items-center gap-2 rounded-2xl bg-card px-3 py-2 shadow-[0_0_0_1.5px_#eadcc6]">
               <div className="min-w-0 flex-1">
                 <p className="font-semibold">
                   {packLabel(item, pack.qty)}
@@ -91,7 +91,7 @@ function ItemBlock({ item }: { item: ItemId }) {
                 <button
                   type="button"
                   aria-label={`Remove one ${packLabel(item, pack.qty)} pack`}
-                  className="grid h-12 w-12 place-items-center rounded-xl bg-sand text-xl font-bold"
+                  className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-sand text-xl font-bold"
                   onClick={() => dispatch({ type: 'remove-pack', item, packIndex: index })}
                 >
                   −
@@ -102,7 +102,7 @@ function ItemBlock({ item }: { item: ItemId }) {
                 type="button"
                 aria-label={`Add ${packLabel(item, pack.qty)} for ${formatMoney(price)}`}
                 disabled={!canAdd}
-                className="grid h-12 w-12 place-items-center rounded-xl bg-lemon text-xl font-bold disabled:opacity-40"
+                className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-lemon text-xl font-bold disabled:opacity-40"
                 onClick={() => dispatch({ type: 'add-pack', item, packIndex: index })}
               >
                 +

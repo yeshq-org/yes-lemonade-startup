@@ -54,20 +54,20 @@ export function SidewalkDay({
 
   return (
     <section aria-label="Sidewalk outside the lemonade stand" className="mt-2">
-      <div className="mb-1.5 flex items-center gap-2" data-testid="day-timeline">
-        <p className="w-14 text-[11px] font-bold text-ink-soft">9:00am</p>
-        <div className="relative h-2 flex-1 rounded-full bg-sand">
+      <div className="mb-1.5 flex items-center gap-1.5" data-testid="day-timeline">
+        <p className="w-12 shrink-0 text-[11px] font-bold text-ink-soft">9:00am</p>
+        <div className="relative h-2 min-w-0 flex-1 rounded-full bg-sand">
           <div className="absolute inset-y-0 left-0 rounded-full bg-[#e2a800]" style={{ width: `${progress * 100}%` }} />
         </div>
-        <p className="w-14 text-right text-[11px] font-bold text-ink-soft">5:00pm</p>
-        <p className="w-16 text-right font-display text-lg leading-none font-semibold" data-testid="day-clock">
+        <p className="w-12 shrink-0 text-right text-[11px] font-bold text-ink-soft">5:00pm</p>
+        <p className="w-14 shrink-0 text-right font-display text-base leading-none font-semibold min-[480px]:w-16 min-[480px]:text-lg" data-testid="day-clock">
           {clock}
         </p>
       </div>
       <p data-testid="day-weather" className="mb-1.5 text-xs font-semibold text-ink">
         {weatherReadout(result.weather)}
       </p>
-      <div ref={sceneRef} data-testid="sidewalk" className="relative h-[272px] overflow-hidden rounded-[28px] bg-[#c5d7ea]">
+      <div ref={sceneRef} data-testid="sidewalk" className="relative h-[272px] w-full max-w-full overflow-hidden rounded-[28px] bg-[#c5d7ea]">
         <div className="absolute inset-0" style={{ background: `linear-gradient(${skyTop}, ${skyBottom})` }} />
         <div
           data-testid="day-sun"

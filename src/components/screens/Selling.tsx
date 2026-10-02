@@ -118,12 +118,12 @@ export function Selling({ onTitle }: { onTitle: () => void }) {
 function PriceOnTheCurb({ priceCents, onChange }: { priceCents: number; onChange: (cents: number) => void }) {
   return (
     <section className="mt-2" data-testid="sidewalk-price">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <div className="shrink-0">
           <p className="text-[10px] font-bold tracking-[0.12em] text-ink-soft">PRICE PER CUP</p>
           <p className="font-display text-2xl leading-none font-semibold">{formatMoney(priceCents)}</p>
         </div>
-        <div className="flex flex-1 gap-1">
+        <div className="flex min-w-0 flex-1 basis-full gap-1 min-[480px]:basis-auto">
           {[
             ['−25¢', -25],
             ['−5¢', -5],
@@ -135,7 +135,7 @@ function PriceOnTheCurb({ priceCents, onChange }: { priceCents: number; onChange
               <button
                 key={label}
                 type="button"
-                className="min-h-11 flex-1 rounded-xl bg-sand text-sm font-semibold disabled:opacity-40"
+                className="min-h-11 min-w-11 flex-1 rounded-xl bg-sand px-1 text-sm font-semibold disabled:opacity-40"
                 disabled={next < PRICE_MIN_CENTS || next > PRICE_MAX_CENTS}
                 onClick={() => onChange(next)}
               >

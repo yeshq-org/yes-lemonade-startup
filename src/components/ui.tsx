@@ -36,7 +36,7 @@ export function Button({ variant = 'primary', className, type = 'button', ...pro
 export function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="grove flex min-h-dvh justify-center">
-      <div className="relative flex min-h-dvh w-full max-w-[440px] flex-col bg-cream shadow-[0_0_0_1px_rgba(28,25,21,0.05),0_24px_80px_rgba(90,55,10,0.12)]">
+      <div className="relative flex min-h-dvh w-full min-w-0 max-w-[440px] flex-col bg-cream shadow-[0_0_0_1px_rgba(28,25,21,0.05),0_24px_80px_rgba(90,55,10,0.12)]">
         {children}
       </div>
     </div>
@@ -107,7 +107,7 @@ export function Stepper({
 }) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-2xl bg-card px-3 py-2 shadow-[0_0_0_1.5px_#eadcc6]">
-      <span className="font-semibold">{label}</span>
+      <span className="min-w-0 flex-1 font-semibold leading-tight">{label}</span>
       <div className="flex items-center gap-1">
         <button
           type="button"

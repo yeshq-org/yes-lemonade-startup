@@ -15,6 +15,23 @@ export function speechAvailable(host: object | null | undefined): boolean {
   return typeof record.SpeechRecognition === 'function' || typeof record.webkitSpeechRecognition === 'function'
 }
 
+function appleTouch(): boolean {
+  if (typeof navigator === 'undefined') return false
+  return /iPhone|iPad|iPod/.test(navigator.userAgent)
+}
+
+/** Plain note for the career questions. iPhone Safari often has no speech recognizer. */
+export function speechHint(host: object | null | undefined): string {
+  if (speechAvailable(host)) {
+    if (appleTouch()) {
+      return 'Tap Talk, then Stop. On iPhone the mic can cut off after a phrase. Tap Talk again, or type.'
+    }
+    return 'Tap Talk, say your answer, then tap Stop. You can still edit the words.'
+  }
+  if (appleTouch()) return 'iPhone Safari usually has no Talk button. Type your answer.'
+  return 'Talk-to-type is not in this browser. You can still type.'
+}
+
 interface TalkResult {
   isFinal: boolean
   0: { transcript: string }

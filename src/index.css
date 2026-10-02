@@ -23,6 +23,13 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
+button,
+input,
+textarea,
+select {
+  touch-action: manipulation;
+}
+
 body {
   margin: 0;
   min-height: 100dvh;
@@ -45,6 +52,12 @@ button,
 input,
 textarea {
   font: inherit;
+}
+
+input,
+textarea,
+select {
+  font-size: 16px;
 }
 
 h1,

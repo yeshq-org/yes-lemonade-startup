@@ -3,7 +3,7 @@ import { BUSINESS_QUESTION, REFLECTIONS, seasonVerdict } from '../../game/coach'
 import { STARTING_CASH_CENTS } from '../../game/constants'
 import { formatHourly, formatMoney } from '../../game/money'
 import { chainFromSummary, summarize, TIER_META } from '../../game/scoring'
-import { appendTranscript, speechAvailable, startTalk, stopTalk } from '../../game/speech'
+import { appendTranscript, speechAvailable, speechHint, startTalk, stopTalk } from '../../game/speech'
 import { weekdayName } from '../../game/weather'
 import { useGame } from '../../state/GameContext'
 import { Chain } from '../Chain'
@@ -110,11 +110,7 @@ export function Career({ onTitle, onNewSeason }: { onTitle: () => void; onNewSea
         <section>
           <h2 className="font-display text-2xl font-semibold">Sit with it</h2>
           <p className="mt-1 text-sm text-ink-soft">Nobody grades these. They save on this device with your season.</p>
-          <p className="mt-1 text-sm text-ink-soft">
-            {speechAvailable(typeof window === 'undefined' ? null : window)
-              ? 'Tap Talk, say your answer, then tap Stop. You can still edit the words.'
-              : 'Talk-to-type is not in this browser. You can still type.'}
-          </p>
+          <p className="mt-1 text-sm text-ink-soft">{speechHint(typeof window === 'undefined' ? null : window)}</p>
           <div className="mt-3 space-y-4">
             {REFLECTIONS.map((prompt, index) => (
               <Reflection
@@ -191,8 +187,8 @@ function Reflection({
 
   return (
     <div>
-      <div className="flex items-start justify-between gap-3">
-        <label htmlFor={fieldId} className="block">
+      <div className="flex flex-col gap-2 min-[480px]:flex-row min-[480px]:items-start min-[480px]:justify-between">
+        <label htmlFor={fieldId} className="block min-w-0">
           <span className="font-semibold">{title}</span>
           <span className="mt-1 block text-sm text-ink-soft">{prompt}</span>
         </label>
@@ -203,7 +199,7 @@ function Reflection({
             aria-pressed={listening}
             aria-label={listening ? 'Stop talking' : 'Talk to type this answer'}
             onClick={toggle}
-            className="min-h-12 shrink-0 rounded-2xl bg-ink px-4 text-sm font-bold tracking-wide text-cream"
+            className="min-h-11 w-full shrink-0 rounded-2xl bg-ink px-4 text-sm font-bold tracking-wide text-cream min-[480px]:w-auto"
           >
             {listening ? 'Stop' : 'Talk'}
           </button>

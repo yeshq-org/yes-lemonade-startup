@@ -1,4 +1,5 @@
 import { formatMoney } from '../game/money'
+import { publicUrl } from '../lib/publicUrl'
 import type { Phase } from '../game/types'
 import { weekdayName } from '../game/weather'
 import { useGame } from '../state/GameContext'
@@ -21,9 +22,9 @@ export function Header({ onTitle, cashCents }: { onTitle: () => void; cashCents?
   const cash = cashCents ?? state.cashCents
   const showSteps = state.phase !== 'career'
   return (
-    <header className="sticky top-0 z-20 border-b border-line/80 bg-cream/95 backdrop-blur-md">
-      <div className="flex items-center gap-2 px-4 py-2.5">
-        <img src="/brand/logo.png" alt="" className="h-11 w-11 shrink-0 object-contain" />
+    <header className="sticky top-0 z-20 border-b border-line/80 bg-cream/95 pt-[env(safe-area-inset-top)] backdrop-blur-md">
+      <div className="flex items-center gap-1.5 px-3 py-1.5 min-[480px]:gap-2 min-[480px]:px-4 min-[480px]:py-2.5">
+        <img src={publicUrl('brand/logo.png')} alt="" className="h-9 w-9 shrink-0 object-contain min-[480px]:h-11 min-[480px]:w-11" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold tracking-wide text-teal">Y.E.S.</p>
           <p className="truncate text-sm font-semibold">

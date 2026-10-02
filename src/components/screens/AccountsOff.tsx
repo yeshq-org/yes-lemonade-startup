@@ -1,3 +1,4 @@
+import { publicUrl } from '../../lib/publicUrl'
 import { Button, Shell, useFocusHeading } from '../ui'
 
 export function AccountsOff({
@@ -12,7 +13,7 @@ export function AccountsOff({
     <Shell>
       <main className="flex flex-1 flex-col px-5 pt-10 pb-8">
         <div className="flex items-center justify-between">
-          <img src="/brand/logo.png" alt="Y.E.S. Youth Entrepreneur Startup" className="h-auto w-36" />
+          <img src={publicUrl('brand/logo.png')} alt="Y.E.S. Youth Entrepreneur Startup" className="h-auto w-36" />
           <button type="button" data-testid="leaderboard-nav" className="min-h-12 font-bold tracking-[0.08em] text-ink" onClick={onLeaderboard}>
             LEADERBOARD
           </button>

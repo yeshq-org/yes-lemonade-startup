@@ -45,12 +45,12 @@ export function Receipt({
           {subtitle}
         </p>
       </header>
-      <table className="w-full border-collapse">
+      <table className="w-full table-fixed border-collapse">
         <caption className="sr-only">Profit and loss</caption>
         <tbody>
           {rows.map((row) => (
             <tr key={row.label} className={cx(row.strong && 'border-t border-dashed border-line')}>
-              <th scope="row" className={cx('py-1.5 text-left text-sm font-semibold tracking-wide', row.strong && 'pt-2 text-base')}>
+              <th scope="row" className={cx('py-1.5 text-left text-sm font-semibold tracking-wide break-words', row.strong && 'pt-2 text-base')}>
                 {row.label}
               </th>
               <td className={cx('py-1.5 text-right font-mono text-base', row.strong && 'text-lg font-semibold')}>

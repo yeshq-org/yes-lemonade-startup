@@ -3,6 +3,7 @@ import { BUSINESS_QUESTION } from '../../game/constants'
 import type { Keeper } from '../../game/types'
 import { useGame } from '../../state/GameContext'
 import { LemonMentor } from '../art'
+import { publicUrl } from '../../lib/publicUrl'
 import { Button, Card, Shell, useFocusHeading } from '../ui'
 
 export function Splash({ onStart, onContinue }: { onStart: (keeper: Keeper) => void; onContinue: () => void }) {
@@ -14,9 +15,9 @@ export function Splash({ onStart, onContinue }: { onStart: (keeper: Keeper) => v
     <Shell>
       <main className="flex flex-1 flex-col px-5 pt-10 pb-8">
         <img
-          src="/brand/logo.png"
+          src={publicUrl('brand/logo.png')}
           alt="Y.E.S. Youth Entrepreneur Startup"
-          className="mx-auto h-auto w-44"
+          className="mx-auto h-auto w-44 max-w-full"
           data-testid="logo"
         />
         <div className="mt-6 flex justify-center" aria-hidden="true">
