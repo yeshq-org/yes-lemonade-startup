@@ -1,4 +1,4 @@
-import { cupsFromInventory, displayCount, estimateUnitCogsCents, totalQty } from '../../game/inventory'
+import { cupMismatchMessage, cupsFromInventory, displayCount, estimateUnitCogsCents, totalQty } from '../../game/inventory'
 import { dayFees, expectedVisitors, trafficWord } from '../../game/demand'
 import { formatMoney, formatUnitCents } from '../../game/money'
 import { DAY_HOURS, PRICE_MAX_CENTS, PRICE_MIN_CENTS, PITCHER_CUPS } from '../../game/constants'
@@ -21,6 +21,7 @@ export function Recipe({ onTitle }: { onTitle: () => void }) {
   const fees = dayFees(DAY_HOURS)
   const shortStock = ready < visitors * 0.7
   const brokeOpen = ready === 0
+  const mismatch = cupMismatchMessage(state.inventory, recipe)
 
   return (
     <Shell>
@@ -32,7 +33,11 @@ export function Recipe({ onTitle }: { onTitle: () => void }) {
         <h1 ref={heading} tabIndex={-1} className="mt-1 font-display text-4xl font-semibold outline-none">
           Build the cup
         </h1>
-        <p className="mt-2 text-ink-soft">One pitcher makes {PITCHER_CUPS} cups. Yesterday’s recipe is still set — change it if the sky changed.</p>
+        <p className="mt-2 text-ink-soft">
+          {state.day > 1
+            ? `One pitcher makes ${PITCHER_CUPS} cups. Yesterday’s recipe is still set — change it if the sky changed.`
+            : `One pitcher makes ${PITCHER_CUPS} cups. This is a starter recipe — change it any time to make it your own.`}
+        </p>
         <div className="mt-4 rounded-3xl bg-ink px-4 py-4 text-cream">
           <p className="text-sm font-semibold text-lemon">Cups you can make</p>
           <p className="font-display text-5xl font-semibold">{ready}</p>
@@ -42,6 +47,11 @@ export function Recipe({ onTitle }: { onTitle: () => void }) {
             {displayCount('sugar', totalQty(state.inventory.sugar))} sugar · {displayCount('ice', totalQty(state.inventory.ice))} ice
           </p>
         </div>
+        {mismatch && (
+          <p className="mt-3 text-sm font-semibold text-coral" data-testid="cup-mismatch">
+            {mismatch}
+          </p>
+        )}
         <div className="mt-4 space-y-2">
           <Stepper
             label="Lemons / pitcher"

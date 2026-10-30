@@ -184,3 +184,42 @@ export function applyCart(
   }
   return next
 }
+
+export type IngredientName = 'lemons' | 'sugar' | 'ice'
+
+/**
+ * When more cups are on hand than the ingredients can fill, names the ingredient(s) that run out first.
+ * Returns null when the cups themselves are the limit, so nothing is wrong to warn about.
+ */
+export function cupMismatch(
+  inv: Inventory,
+  recipe: Recipe,
+): { cupsOnHand: number; makeable: number; used: IngredientName[]; limiting: IngredientName[] } | null {
+  const cupsOnHand = totalQty(inv.cups)
+  const per: { name: IngredientName; cups: number }[] = [
+    { name: 'lemons', cups: Math.floor(totalQty(inv.lemons) / Math.max(1, recipe.lemons)) },
+    { name: 'sugar', cups: Math.floor(totalQty(inv.sugar) / Math.max(1, recipe.sugar)) },
+  ]
+  if (recipe.ice > 0) per.push({ name: 'ice', cups: Math.floor(totalQty(inv.ice) / recipe.ice) })
+  const makeable = Math.min(...per.map((entry) => entry.cups))
+  if (makeable >= cupsOnHand) return null
+  return {
+    cupsOnHand,
+    makeable,
+    used: per.map((entry) => entry.name),
+    limiting: per.filter((entry) => entry.cups === makeable).map((entry) => entry.name),
+  }
+}
+
+function joinNames(names: string[]): string {
+  if (names.length <= 1) return names.join('')
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+}
+
+/** Plain-language warning for new players, or null when cups and ingredients line up. */
+export function cupMismatchMessage(inv: Inventory, recipe: Recipe): string | null {
+  const gap = cupMismatch(inv, recipe)
+  if (!gap || gap.cupsOnHand === 0) return null
+  const makes = gap.makeable === 0 ? 'make no cups' : `make ${gap.makeable} cup${gap.makeable === 1 ? '' : 's'}`
+  return `Your ${joinNames(gap.used)} ${makes}. Buy more ${joinNames(gap.limiting)} to use all ${gap.cupsOnHand} cups.`
+}

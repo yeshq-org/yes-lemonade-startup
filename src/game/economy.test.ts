@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { CATALOG } from './catalog'
 import { DAY_HOURS, PRICE_MAX_CENTS, PRICE_MIN_CENTS, STARTING_CASH_CENTS } from './constants'
 import { IDEAL_ICE, buyRate, dayFees, expectedVisitors, fairPriceCents, iceComfort, tasteScore } from './demand'
-import { addStock, consume, cupsFromInventory, emptyInventory, inventoryValueCents } from './inventory'
+import { addStock, consume, cupMismatchMessage, cupsFromInventory, emptyInventory, inventoryValueCents } from './inventory'
 import { createGame } from './setup'
 import { simulateDay } from './simulate'
 import { summarize } from './scoring'
@@ -288,3 +288,31 @@ function stocked() {
   inv = addStock(inv, 'ice', 800, 600)
   return inv
 }
+
+describe('cup and ingredient mismatch warning', () => {
+  const recipe = { lemons: 4, sugar: 4, ice: 2, priceCents: 100 }
+  function stock(cups: number, lemons: number, sugar: number, ice: number) {
+    let inv = emptyInventory()
+    inv = addStock(inv, 'cups', cups, 100)
+    inv = addStock(inv, 'lemons', lemons, 100)
+    inv = addStock(inv, 'sugar', sugar, 100)
+    inv = addStock(inv, 'ice', ice, 100)
+    return inv
+  }
+
+  it('names the limiting ingredient and what to buy', () => {
+    expect(cupMismatchMessage(stock(25, 9, 9, 48), recipe)).toBe(
+      'Your lemons, sugar and ice make 24 cups. Buy more ice to use all 25 cups.',
+    )
+  })
+
+  it('stays quiet when the cups are the limit', () => {
+    expect(cupMismatchMessage(stock(10, 9, 9, 100), recipe)).toBeNull()
+  })
+
+  it('names every ingredient tied for the limit', () => {
+    expect(cupMismatchMessage(stock(25, 3, 9, 18), recipe)).toBe(
+      'Your lemons, sugar and ice make 9 cups. Buy more lemons and ice to use all 25 cups.',
+    )
+  })
+})

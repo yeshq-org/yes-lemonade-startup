@@ -57,6 +57,14 @@ export function Shop({ onTitle }: { onTitle: () => void }) {
   )
 }
 
+/** Names the item on the button so a bare + or − is never ambiguous. */
+function buttonLabel(item: ItemId, qty: number): string {
+  if (item === 'sugar') return `${qty} cups of sugar`
+  if (item === 'ice') return `${qty} ice cubes`
+  if (item === 'lemons') return `${qty} lemons`
+  return `${qty} cups`
+}
+
 function ItemBlock({ item }: { item: ItemId }) {
   const { state, dispatch } = useGame()
   if (!state) return null
@@ -75,38 +83,43 @@ function ItemBlock({ item }: { item: ItemId }) {
           const inCart = state.cart.find((line) => line.item === item && line.packIndex === index)?.packs ?? 0
           const canAdd = state.cashCents - cartCostCents(state.cart, prices) >= price
           return (
-            <div key={pack.qty} className="flex min-w-0 items-center gap-2 rounded-2xl bg-card px-3 py-2 shadow-[0_0_0_1.5px_#eadcc6]">
-              <div className="min-w-0 flex-1">
+            <div key={pack.qty} className="min-w-0 rounded-2xl bg-card px-3 py-3 shadow-[0_0_0_1.5px_#eadcc6]">
+              <div className="flex min-w-0 items-baseline justify-between gap-2">
                 <p className="font-semibold">
                   {packLabel(item, pack.qty)}
                   {index === best && (
                     <span className="ml-2 rounded-full bg-leaf px-2 py-0.5 align-middle text-xs font-bold text-cream">Best rate</span>
                   )}
                 </p>
-                <p className="text-sm text-ink-soft">
-                  {formatMoney(price)} · {formatUnitCents(price / pack.qty)} each
-                </p>
+                <p className="shrink-0 font-semibold">{formatMoney(price)}</p>
               </div>
-              {inCart > 0 && (
+              <p className="text-sm text-ink-soft">{formatUnitCents(price / pack.qty)} each</p>
+              <div className="mt-2 flex min-w-0 items-center gap-2">
+                {inCart > 0 && (
+                  <button
+                    type="button"
+                    aria-label={`Remove one ${packLabel(item, pack.qty)} pack`}
+                    className="min-h-12 min-w-0 flex-1 rounded-xl bg-sand px-2 text-center text-sm leading-tight font-bold"
+                    onClick={() => dispatch({ type: 'remove-pack', item, packIndex: index })}
+                  >
+                    − {buttonLabel(item, pack.qty)}
+                  </button>
+                )}
+                {inCart > 0 && (
+                  <span className="min-w-8 text-center font-display text-xl font-semibold" aria-label={`${inCart} in cart`}>
+                    {inCart}
+                  </span>
+                )}
                 <button
                   type="button"
-                  aria-label={`Remove one ${packLabel(item, pack.qty)} pack`}
-                  className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-sand text-xl font-bold"
-                  onClick={() => dispatch({ type: 'remove-pack', item, packIndex: index })}
+                  aria-label={`Add ${packLabel(item, pack.qty)} for ${formatMoney(price)}`}
+                  disabled={!canAdd}
+                  className="min-h-12 min-w-0 flex-1 rounded-xl bg-lemon px-2 text-center text-sm leading-tight font-bold disabled:opacity-40"
+                  onClick={() => dispatch({ type: 'add-pack', item, packIndex: index })}
                 >
-                  −
+                  + {buttonLabel(item, pack.qty)}
                 </button>
-              )}
-              {inCart > 0 && <span className="w-6 text-center font-display text-xl font-semibold">{inCart}</span>}
-              <button
-                type="button"
-                aria-label={`Add ${packLabel(item, pack.qty)} for ${formatMoney(price)}`}
-                disabled={!canAdd}
-                className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-lemon text-xl font-bold disabled:opacity-40"
-                onClick={() => dispatch({ type: 'add-pack', item, packIndex: index })}
-              >
-                +
-              </button>
+              </div>
             </div>
           )
         })}
