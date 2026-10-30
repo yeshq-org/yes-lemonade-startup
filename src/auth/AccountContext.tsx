@@ -24,22 +24,24 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const configured = supabase !== null
   const [ready, setReady] = useState(!configured)
   const [session, setSession] = useState<Session | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [profileReady, setProfileReady] = useState(!configured)
+  const [loaded, setLoaded] = useState<{ userId: string | null; profile: Profile | null } | null>(null)
+  const userId = session?.user.id ?? null
+  // The profile counts as loaded only once the fetch finished for the user who is signed in right now.
+  const profileReady = !configured || (ready && (userId === null || loaded?.userId === userId))
+  const profile = userId !== null && loaded?.userId === userId ? loaded.profile : null
 
   const refreshProfile = useCallback(async () => {
     if (!supabase || !session) {
-      setProfile(null)
-      setProfileReady(true)
+      setLoaded(null)
       return
     }
+    const id = session.user.id
     const { data } = await supabase
       .from('users')
       .select('id, display_name, username, role')
-      .eq('id', session.user.id)
+      .eq('id', id)
       .maybeSingle()
-    setProfile((data as Profile | null) ?? null)
-    setProfileReady(true)
+    setLoaded({ userId: id, profile: (data as Profile | null) ?? null })
   }, [session])
 
   useEffect(() => {

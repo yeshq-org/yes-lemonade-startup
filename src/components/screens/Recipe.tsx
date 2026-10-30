@@ -48,7 +48,7 @@ export function Recipe({ onTitle }: { onTitle: () => void }) {
           </p>
         </div>
         {mismatch && (
-          <p className="mt-3 text-sm font-semibold text-coral" data-testid="cup-mismatch">
+          <p className="mt-3 rounded-2xl bg-lemon/30 px-3 py-2 text-sm text-ink" data-testid="cup-mismatch">
             {mismatch}
           </p>
         )}
@@ -108,7 +108,7 @@ export function Recipe({ onTitle }: { onTitle: () => void }) {
           <span className="font-semibold">{trafficWord(visitors)}</span>
           {` · about ${visitors} passersby`}. Opening charges {formatMoney(fees.standFeeCents)}.
         </p>
-        {shortStock && !brokeOpen && (
+        {shortStock && !brokeOpen && !mismatch && (
           <p className="mt-2 text-sm font-semibold text-coral">
             You can only make {ready} cups. The day will not serve people you cannot pour for.
           </p>

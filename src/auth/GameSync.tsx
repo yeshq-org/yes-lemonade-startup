@@ -6,6 +6,9 @@ import { supabase } from '../lib/supabase'
 import type { GameState } from '../game/types'
 import { useGame } from '../state/GameContext'
 
+/** How long a toast stays on screen. */
+const TOAST_MS = 3500
+
 export function GameSync() {
   const { state, dispatch } = useGame()
   const { profile } = useAccount()
@@ -13,7 +16,19 @@ export function GameSync() {
   const previous = useRef<GameState | null>(null)
   const posted = useRef<string | null>(null)
   const skipRelease = useRef(false)
-  const [note, setNote] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ id: number; text: string } | null>(null)
+  const toastId = useRef(0)
+  const setNote = (text: string) => {
+    toastId.current += 1
+    setToast({ id: toastId.current, text })
+  }
+
+  // Every toast clears itself after a few seconds.
+  useEffect(() => {
+    if (!toast) return
+    const handle = window.setTimeout(() => setToast(null), TOAST_MS)
+    return () => window.clearTimeout(handle)
+  }, [toast])
 
   useEffect(() => {
     if (!supabase || !state?.gameId || !state.mode || state.scoringVersion !== 1) {
@@ -48,7 +63,8 @@ export function GameSync() {
           await submitFinishedGame(current, profile.display_name, teamName)
           posted.current = current.gameId
           last.current = JSON.stringify(current)
-          setNote('Posted to the leaderboard.')
+          // Only announce a score that was just finished in this session, never one found on a later load.
+          if (prior && prior.gameId === current.gameId && prior.phase !== 'career') setNote('Posted to the leaderboard.')
           return
         }
         const handoff =
@@ -80,13 +96,15 @@ export function GameSync() {
     }
   }, [state, profile, dispatch])
 
-  if (!note) return null
+  if (!toast) return null
+  // Top of the screen and click-through, so a toast can never sit on the sticky action buttons.
   return (
     <p
       role="status"
-      className="fixed bottom-4 left-1/2 z-50 w-[min(100%-2rem,24rem)] -translate-x-1/2 rounded-2xl bg-ink px-4 py-3 text-sm font-semibold text-cream"
+      aria-live="polite"
+      className="pointer-events-none fixed top-3 left-1/2 z-50 w-[min(100%-2rem,24rem)] -translate-x-1/2 rounded-2xl bg-ink px-4 py-3 text-sm font-semibold text-cream shadow-lg"
     >
-      {note}
+      {toast.text}
     </p>
   )
 }
