@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createGame } from './setup'
 import { normalizeSave } from './storage'
-import { BOARD_LIMIT, cleanDisplayName, daysForMode, normalizeJoinCode, rankScores, SCORING_VERSION, topBoard } from './leaderboard'
+import { BOARD_LIMIT, cleanDisplayName, cleanUsername, daysForMode, normalizeJoinCode, rankScores, SCORING_VERSION, topBoard } from './leaderboard'
 
 describe('leaderboard rank', () => {
   it('orders by net profit, then earnings per hour', () => {
@@ -83,5 +83,16 @@ describe('modes', () => {
     expect(loaded?.gameId).toBe('game-1')
     expect(loaded?.keeper).toBe('guy')
     expect(loaded?.hours).toBe(8)
+  })
+})
+
+describe('usernames', () => {
+  it('accepts 3 to 20 letters, numbers, and underscores', () => {
+    expect(cleanUsername('Lemon_King9')).toBe('Lemon_King9')
+    expect(cleanUsername('  @pedrok ')).toBe('pedrok')
+    expect(cleanUsername('ab')).toBeNull()
+    expect(cleanUsername('a'.repeat(21))).toBeNull()
+    expect(cleanUsername('has space')).toBeNull()
+    expect(cleanUsername('me@example.com')).toBeNull()
   })
 })

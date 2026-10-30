@@ -109,7 +109,7 @@ function Root() {
         </main>
       </Shell>
     )
-  } else if (!session || !profile) {
+  } else if (!session || !profile || !profile.username) {
     body = <LoginScreen />
   } else if (screen === 'board') {
     body = <LeaderboardScreen onBack={() => setScreen(boardBack)} />

@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { cleanDisplayName } from '../../game/leaderboard'
+import { cleanDisplayName, cleanUsername, USERNAME_HELP, USERNAME_TAKEN } from '../../game/leaderboard'
 import { publicUrl } from '../../lib/publicUrl'
 import { supabase } from '../../lib/supabase'
-import { errorText } from '../../auth/api'
+import { errorText, profileErrorText, usernameAvailable } from '../../auth/api'
 import { useAccount } from '../../auth/AccountContext'
 import { Button, Shell, useFocusHeading } from '../ui'
 
@@ -11,6 +11,7 @@ export function LoginScreen() {
   const { session, profile, refreshProfile } = useAccount()
   const [mode, setMode] = useState<'in' | 'up'>('up')
   const [name, setName] = useState('')
+  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -24,19 +25,28 @@ export function LoginScreen() {
     setBusy(true)
     try {
       if (mode === 'up') {
+        const handle = cleanUsername(username)
+        if (!handle) {
+          setError(USERNAME_HELP)
+          return
+        }
         const displayName = cleanDisplayName(name)
         if (!displayName) {
-          setError('Use a display name of 2 to 24 characters. Do not use an email address.')
+          setError('Use a name of 2 to 24 characters. Do not use an email address.')
           return
         }
         if (password.length < 8) {
           setError('Use a password of at least 8 characters.')
           return
         }
+        if ((await usernameAvailable(handle)) === false) {
+          setError(USERNAME_TAKEN)
+          return
+        }
         const { data, error: signError } = await supabase.auth.signUp({
           email: email.trim(),
           password,
-          options: { data: { display_name: displayName } },
+          options: { data: { display_name: displayName, username: handle } },
         })
         if (signError) throw signError
         if (!data.session) {
@@ -47,6 +57,7 @@ export function LoginScreen() {
         const { error: profileError } = await supabase.from('users').insert({
           id: data.session.user.id,
           display_name: displayName,
+          username: handle,
           role: 'player',
         })
         if (profileError) throw profileError
@@ -56,14 +67,20 @@ export function LoginScreen() {
         if (signError) throw signError
       }
     } catch (caught) {
-      setError(errorText(caught))
+      setError(mode === 'up' ? profileErrorText(caught) : errorText(caught))
     } finally {
       setBusy(false)
     }
   }
 
-  if (session && !profile) {
-    return <NamePrompt initial={String(session.user.user_metadata.display_name ?? '')} />
+  if (session && !busy && (!profile || !profile.username)) {
+    return (
+      <NamePrompt
+        initialName={profile?.display_name ?? String(session.user.user_metadata.display_name ?? '')}
+        initialUsername={profile?.username ?? String(session.user.user_metadata.username ?? '')}
+        initialError={error}
+      />
+    )
   }
 
   return (
@@ -74,7 +91,7 @@ export function LoginScreen() {
           {mode === 'up' ? 'Create your account' : 'Sign in'}
         </h1>
         <p className="mt-3 text-ink-soft">
-          Play starts after login. Leaderboards show your display name, never your email.
+          Play starts after login. Leaderboards show your username, never your email.
         </p>
         <form
           className="mt-6 space-y-3"
@@ -84,16 +101,34 @@ export function LoginScreen() {
           }}
         >
           {mode === 'up' && (
-            <label className="block">
-              <span className="font-semibold">Display name</span>
-              <input
-                data-testid="signup-name"
-                className="mt-1 min-h-12 w-full rounded-2xl bg-card px-3 shadow-[0_0_0_1.5px_#eadcc6]"
-                autoComplete="nickname"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </label>
+            <>
+              <label className="block">
+                <span className="font-semibold">Username</span>
+                <input
+                  data-testid="signup-username"
+                  className="mt-1 min-h-12 w-full rounded-2xl bg-card px-3 shadow-[0_0_0_1.5px_#eadcc6]"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  maxLength={21}
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                />
+                <span className="mt-1 block text-sm text-ink-soft">Shown on leaderboards. Only you can have it.</span>
+              </label>
+              <label className="block">
+                <span className="font-semibold">Your name</span>
+                <input
+                  data-testid="signup-name"
+                  className="mt-1 min-h-12 w-full rounded-2xl bg-card px-3 shadow-[0_0_0_1.5px_#eadcc6]"
+                  autoComplete="name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                />
+                <span className="mt-1 block text-sm text-ink-soft">Other players can have the same name.</span>
+              </label>
+            </>
           )}
           <label className="block">
             <span className="font-semibold">Email</span>
@@ -138,49 +173,88 @@ export function LoginScreen() {
   )
 }
 
-function NamePrompt({ initial }: { initial: string }) {
-  const { session, refreshProfile } = useAccount()
-  const [name, setName] = useState(initial)
-  const [error, setError] = useState<string | null>(null)
+function NamePrompt({
+  initialName,
+  initialUsername,
+  initialError,
+}: {
+  initialName: string
+  initialUsername: string
+  initialError: string | null
+}) {
+  const { session, profile, refreshProfile } = useAccount()
+  const [name, setName] = useState(initialName)
+  const [username, setUsername] = useState(initialUsername)
+  const [error, setError] = useState<string | null>(initialError)
+  const [busy, setBusy] = useState(false)
   const heading = useFocusHeading()
 
   async function save() {
     if (!supabase || !session) return
+    setError(null)
+    const handle = cleanUsername(username)
+    if (!handle) {
+      setError(USERNAME_HELP)
+      return
+    }
     const displayName = cleanDisplayName(name)
     if (!displayName) {
-      setError('Use a display name of 2 to 24 characters. Do not use an email address.')
+      setError('Use a name of 2 to 24 characters. Do not use an email address.')
       return
     }
-    const { error: insertError } = await supabase.from('users').insert({
-      id: session.user.id,
-      display_name: displayName,
-      role: 'player',
-    })
-    if (insertError) {
-      setError(errorText(insertError))
-      return
+    setBusy(true)
+    try {
+      const row = { display_name: displayName, username: handle }
+      const { error: saveError } = profile
+        ? await supabase.from('users').update(row).eq('id', session.user.id)
+        : await supabase.from('users').insert({ id: session.user.id, ...row, role: 'player' })
+      if (saveError) {
+        setError(profileErrorText(saveError))
+        return
+      }
+      await refreshProfile()
+    } finally {
+      setBusy(false)
     }
-    await refreshProfile()
   }
 
   return (
     <Shell>
       <main className="flex flex-1 flex-col px-5 pt-10 pb-8">
         <h1 ref={heading} tabIndex={-1} className="font-display text-4xl font-semibold outline-none">
-          Choose a display name
+          Choose a username
         </h1>
-        <p className="mt-3 text-ink-soft">This is the only name that appears on a leaderboard.</p>
+        <p className="mt-3 text-ink-soft">Your username is what appears on a leaderboard. Pick one nobody else has.</p>
         <label className="mt-6 block">
-          <span className="font-semibold">Display name</span>
+          <span className="font-semibold">Username</span>
           <input
+            data-testid="prompt-username"
             className="mt-1 min-h-12 w-full rounded-2xl bg-card px-3 shadow-[0_0_0_1.5px_#eadcc6]"
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            maxLength={21}
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+          />
+        </label>
+        <label className="mt-4 block">
+          <span className="font-semibold">Your name</span>
+          <input
+            data-testid="prompt-name"
+            className="mt-1 min-h-12 w-full rounded-2xl bg-card px-3 shadow-[0_0_0_1.5px_#eadcc6]"
+            autoComplete="name"
             value={name}
             onChange={(event) => setName(event.target.value)}
           />
+          <span className="mt-1 block text-sm text-ink-soft">Other players can have the same name.</span>
         </label>
         {error && <p className="mt-3 text-sm font-semibold text-coral">{error}</p>}
         <div className="mt-6">
-          <Button onClick={() => void save()}>Save name</Button>
+          <Button data-testid="prompt-save" disabled={busy} onClick={() => void save()}>
+            Save
+          </Button>
         </div>
       </main>
     </Shell>

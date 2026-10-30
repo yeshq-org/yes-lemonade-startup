@@ -25,6 +25,15 @@ export function cleanDisplayName(raw: string): string | null {
   return name
 }
 
+/** Public handle: 3 to 20 letters, numbers, or underscores. Unique across players, ignoring case. */
+export function cleanUsername(raw: string): string | null {
+  const name = raw.trim().replace(/^@/, '')
+  return /^[A-Za-z0-9_]{3,20}$/.test(name) ? name : null
+}
+
+export const USERNAME_HELP = 'Use 3 to 20 letters, numbers, or underscores. No spaces and no email address.'
+export const USERNAME_TAKEN = 'That username is taken. Try another one.'
+
 /** Accepts YES-4827, yes4827, or 4827. */
 export function normalizeJoinCode(raw: string): string | null {
   const compact = raw.toUpperCase().replace(/[^A-Z0-9]/g, '')

@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 export interface Profile {
   id: string
   display_name: string
+  username: string | null
   role: 'player' | 'host' | 'admin'
 }
 
@@ -34,7 +35,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     }
     const { data } = await supabase
       .from('users')
-      .select('id, display_name, role')
+      .select('id, display_name, username, role')
       .eq('id', session.user.id)
       .maybeSingle()
     setProfile((data as Profile | null) ?? null)

@@ -80,9 +80,12 @@ export function LeaderboardScreen({ onBack }: { onBack: () => void }) {
               {rows.map((row, index) => (
                 <li key={row.id} className="rounded-2xl bg-card px-3 py-3 shadow-[0_0_0_1.5px_#eadcc6]">
                   <p className="font-semibold">
-                    {index + 1}. {row.display_name}
+                    {index + 1}. {row.username ?? row.display_name}
                     {row.team_name ? ` · ${row.team_name}` : ''}
                   </p>
+                  {row.username && row.display_name !== row.username && (
+                    <p className="text-sm text-ink-soft">{row.display_name}</p>
+                  )}
                   <p className="text-sm text-ink-soft">
                     Net profit {formatMoney(row.net_cents)} · {formatHourly(row.earnings_per_hour_cents)}
                   </p>

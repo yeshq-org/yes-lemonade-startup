@@ -1,7 +1,7 @@
 import { summarize } from '../game/scoring'
 import type { GameMode, GameState } from '../game/types'
 import { supabase } from '../lib/supabase'
-import { BOARD_LIMIT, normalizeJoinCode, SCORING_VERSION } from '../game/leaderboard'
+import { BOARD_LIMIT, normalizeJoinCode, SCORING_VERSION, USERNAME_TAKEN } from '../game/leaderboard'
 
 export interface CompetitionRow {
   id: string
@@ -36,6 +36,7 @@ export interface GameRow {
 export interface ScoreRow {
   id: string
   display_name: string
+  username: string | null
   team_name: string | null
   net_cents: number
   earnings_per_hour_cents: number | null
@@ -55,6 +56,26 @@ export function errorText(error: unknown): string {
     return error.message
   }
   return 'Something went wrong. Try again.'
+}
+
+/** True when the message from the database says another player already holds this username. */
+export function isUsernameTaken(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  const code = 'code' in error ? String(error.code) : ''
+  const text = errorText(error)
+  return code === '23505' || /duplicate key|users_username_lower_key|already exists/i.test(text)
+}
+
+/** Friendly text for a failed sign-up or profile save. */
+export function profileErrorText(error: unknown): string {
+  return isUsernameTaken(error) ? USERNAME_TAKEN : errorText(error)
+}
+
+/** Asks the database whether a username is free. Works before sign-up. Null means it could not tell. */
+export async function usernameAvailable(username: string): Promise<boolean | null> {
+  const { data, error } = await client().rpc('username_available', { p_username: username })
+  if (error || typeof data !== 'boolean') return null
+  return data
 }
 
 export async function createPrivateCompetition(name: string, mode: GameMode): Promise<CompetitionRow> {
@@ -147,7 +168,7 @@ export async function listMyPrivateCompetitions(): Promise<CompetitionRow[]> {
 export async function loadBoard(competitionId: string): Promise<ScoreRow[]> {
   const { data, error } = await client()
     .from('scores')
-    .select('id, display_name, team_name, net_cents, earnings_per_hour_cents, revenue_cents, mode, scoring_version, competition_id')
+    .select('id, display_name, username, team_name, net_cents, earnings_per_hour_cents, revenue_cents, mode, scoring_version, competition_id')
     .eq('competition_id', competitionId)
     .eq('scoring_version', SCORING_VERSION)
     .order('net_cents', { ascending: false })

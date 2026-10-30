@@ -233,7 +233,7 @@ export function SetupScreen({
           </button>
         </div>
         <h1 ref={heading} tabIndex={-1} className="mt-4 font-display text-4xl leading-tight font-semibold outline-none">
-          {profile ? `Hi, ${profile.display_name}` : 'Start a season'}
+          {profile ? `Hi, ${profile.display_name || profile.username}` : 'Start a season'}
         </h1>
         {legacy && !replaceLegacy && (
           <Card className="mt-4">
