@@ -23,7 +23,7 @@ import { supabase } from '../../lib/supabase'
 import type { GameMode, Keeper } from '../../game/types'
 import { useGame } from '../../state/GameContext'
 import { Button, Card, Shell, useFocusHeading } from '../ui'
-import { endConfirmText } from '../EndGame'
+import { ConfirmBox, endConfirmText } from '../EndGame'
 import { canEndEarly, daysIfEndedNow } from '../../state/reducer'
 
 export function SetupScreen({
@@ -269,7 +269,7 @@ export function SetupScreen({
               </Button>
               {canEndEarly(active) &&
                 (confirmEnd === 'local' ? (
-                  <div className="rounded-2xl bg-sand px-3 py-3" role="alertdialog" aria-label="End game" data-testid="end-confirm">
+                  <ConfirmBox>
                     <p className="font-semibold">{endConfirmText(daysIfEndedNow(active))}</p>
                     <div className="mt-3 grid grid-cols-2 gap-2">
                       <Button variant="secondary" onClick={() => setConfirmEnd(null)}>
@@ -286,7 +286,7 @@ export function SetupScreen({
                         End game
                       </Button>
                     </div>
-                  </div>
+                  </ConfirmBox>
                 ) : (
                   <Button variant="ghost" data-testid="end-game" onClick={() => setConfirmEnd('local')}>
                     End this game
@@ -311,7 +311,7 @@ export function SetupScreen({
                     </Button>
                     {endable &&
                       (confirmEnd === game.id ? (
-                        <div className="rounded-2xl bg-sand px-3 py-3" role="alertdialog" aria-label="End game" data-testid="end-confirm">
+                        <ConfirmBox>
                           <p className="font-semibold">{endConfirmText(days)}</p>
                           <div className="mt-3 grid grid-cols-2 gap-2">
                             <Button variant="secondary" onClick={() => setConfirmEnd(null)}>
@@ -321,7 +321,7 @@ export function SetupScreen({
                               End game
                             </Button>
                           </div>
-                        </div>
+                        </ConfirmBox>
                       ) : (
                         <Button variant="ghost" data-testid="end-game" onClick={() => setConfirmEnd(game.id)}>
                           End this game
