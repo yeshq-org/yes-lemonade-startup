@@ -41,6 +41,8 @@ export interface ScoreRow {
   net_cents: number
   earnings_per_hour_cents: number | null
   revenue_cents: number
+  /** Days actually played (8 hours each). Lower than the season length when the player ended early. */
+  days_played: number | null
   mode: GameMode
   scoring_version: number
   competition_id: string
@@ -53,6 +55,9 @@ function client() {
 
 export function errorText(error: unknown): string {
   if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+    if (/already in progress/i.test(error.message)) {
+      return 'You already have a game going. Continue it or end it from the start screen.'
+    }
     return error.message
   }
   return 'Something went wrong. Try again.'
@@ -168,7 +173,7 @@ export async function listMyPrivateCompetitions(): Promise<CompetitionRow[]> {
 export async function loadBoard(competitionId: string): Promise<ScoreRow[]> {
   const { data, error } = await client()
     .from('scores')
-    .select('id, display_name, username, team_name, net_cents, earnings_per_hour_cents, revenue_cents, mode, scoring_version, competition_id')
+    .select('id, display_name, username, team_name, net_cents, earnings_per_hour_cents, revenue_cents, days_played, mode, scoring_version, competition_id')
     .eq('competition_id', competitionId)
     .eq('scoring_version', SCORING_VERSION)
     .order('net_cents', { ascending: false })

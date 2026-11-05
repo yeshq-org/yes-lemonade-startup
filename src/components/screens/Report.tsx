@@ -6,6 +6,7 @@ import { ITEM_IDS } from '../../game/types'
 import { weatherReadout, weekdayName } from '../../game/weather'
 import { useGame } from '../../state/GameContext'
 import { Chain } from '../Chain'
+import { EndGameNow } from '../EndGame'
 import { Header } from '../Header'
 import { Receipt } from '../Receipt'
 import { Button, Card, Dock, Meter, Shell, useFocusHeading } from '../ui'
@@ -99,6 +100,7 @@ export function Report({ onTitle }: { onTitle: () => void }) {
         <Button data-testid="advance" onClick={() => dispatch({ type: 'advance' })}>
           {last ? 'See your season' : 'Start tomorrow'}
         </Button>
+        {!last && <EndGameNow />}
       </Dock>
     </Shell>
   )

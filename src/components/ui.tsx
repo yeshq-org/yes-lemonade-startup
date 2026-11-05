@@ -1,3 +1,4 @@
+import { ToastSlot } from './toast'
 import { useEffect, useRef, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { formatMoney } from '../game/money'
 
@@ -37,6 +38,7 @@ export function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="grove flex min-h-dvh justify-center">
       <div className="relative flex min-h-dvh w-full min-w-0 max-w-[440px] flex-col bg-cream shadow-[0_0_0_1px_rgba(28,25,21,0.05),0_24px_80px_rgba(90,55,10,0.12)]">
+        <ToastSlot />
         {children}
       </div>
     </div>
@@ -45,12 +47,10 @@ export function Shell({ children }: { children: ReactNode }) {
 
 export function Dock({ children }: { children: ReactNode }) {
   return (
-    <>
-      <div className="h-48 shrink-0" aria-hidden="true" />
-      <div className="fixed bottom-0 left-1/2 z-30 w-full max-w-[440px] -translate-x-1/2 border-t border-line/80 bg-cream/95 px-4 pt-3 pb-[max(0.85rem,env(safe-area-inset-bottom))] backdrop-blur-md">
-        {children}
-      </div>
-    </>
+    // Part of the normal page flow, never fixed or sticky, so it can't cover receipts or other buttons.
+    <div data-testid="dock" className="mt-6 shrink-0 border-t border-line/80 bg-cream px-4 pt-3 pb-[max(1.25rem,calc(env(safe-area-inset-bottom)+0.75rem))]">
+      {children}
+    </div>
   )
 }
 

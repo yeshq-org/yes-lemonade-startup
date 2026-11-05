@@ -335,3 +335,57 @@ describe('cup and ingredient mismatch warning', () => {
     )
   })
 })
+
+describe('end game early', () => {
+  it('ends after the days played, melts today\u2019s ice, and keeps the books balanced', async () => {
+    const { canEndEarly, daysIfEndedNow } = await import('../state/reducer')
+    let state = createGame(7, 9)
+    expect(canEndEarly(state)).toBe(false)
+    for (let day = 0; day < 2; day += 1) {
+      state = reducer(state, { type: 'ack-morning' })!
+      for (const item of ['cups', 'lemons', 'sugar', 'ice'] as const) state = reducer(state, { type: 'add-pack', item, packIndex: 0 })!
+      state = reducer(state, { type: 'checkout' })!
+      state = reducer(state, { type: 'open' })!
+      state = reducer(state, { type: 'to-report' })!
+      state = reducer(state, { type: 'advance' })!
+    }
+    // Day 3: bought ice, then ends before opening.
+    state = reducer(state, { type: 'ack-morning' })!
+    state = reducer(state, { type: 'add-pack', item: 'ice', packIndex: 0 })!
+    state = reducer(state, { type: 'checkout' })!
+    expect(daysIfEndedNow(state)).toBe(2)
+    state = reducer(state, { type: 'end-early' })!
+    expect(state.phase).toBe('career')
+    expect(state.endedEarly).toBe(true)
+    expect(state.history).toHaveLength(2)
+    expect(state.inventory.ice).toEqual([])
+    const summary = summarize(state)
+    expect(summary.totalHours).toBe(16)
+    expect(summary.daysPlayed).toBe(2)
+    assertBooks(state)
+  })
+
+  it('counts the reported day when ending from the day report', async () => {
+    const { daysIfEndedNow } = await import('../state/reducer')
+    let state = createGame(7, 9)
+    state = reducer(state, { type: 'ack-morning' })!
+    state = reducer(state, { type: 'checkout' })!
+    state = reducer(state, { type: 'open' })!
+    state = reducer(state, { type: 'to-report' })!
+    expect(daysIfEndedNow(state)).toBe(1)
+    state = reducer(state, { type: 'end-early' })!
+    expect(state.phase).toBe('career')
+    expect(state.history).toHaveLength(1)
+    assertBooks(state)
+  })
+})
+
+describe('formatQty', () => {
+  it('shows at most two decimals', async () => {
+    const { formatQty } = await import('./money')
+    expect(formatQty(30.333333333333332)).toBe('30.33')
+    expect(formatQty(12)).toBe('12')
+    expect(formatQty(2.5)).toBe('2.5')
+    expect(formatQty(7.999)).toBe('8')
+  })
+})

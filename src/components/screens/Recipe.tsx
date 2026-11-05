@@ -1,6 +1,6 @@
 import { cupMismatchMessage, cupsFromInventory, displayCount, estimateUnitCogsCents, totalQty } from '../../game/inventory'
 import { dayFees, expectedVisitors, trafficWord } from '../../game/demand'
-import { formatMoney, formatUnitCents } from '../../game/money'
+import { formatMoney, formatQty, formatUnitCents } from '../../game/money'
 import { DAY_HOURS, PRICE_MAX_CENTS, PRICE_MIN_CENTS, PITCHER_CUPS } from '../../game/constants'
 import { weatherReadout } from '../../game/weather'
 import { useGame } from '../../state/GameContext'
@@ -42,9 +42,10 @@ export function Recipe({ onTitle }: { onTitle: () => void }) {
           <p className="text-sm font-semibold text-lemon">Cups you can make</p>
           <p className="font-display text-5xl font-semibold">{ready}</p>
           <p className="text-sm text-cream/80">
-            On hand: {displayCount('cups', totalQty(state.inventory.cups))} cups ·{' '}
-            {displayCount('lemons', totalQty(state.inventory.lemons))} lemons ·{' '}
-            {displayCount('sugar', totalQty(state.inventory.sugar))} sugar · {displayCount('ice', totalQty(state.inventory.ice))} ice
+            On hand: {formatQty(displayCount('cups', totalQty(state.inventory.cups)), 0)} cups ·{' '}
+            {formatQty(displayCount('lemons', totalQty(state.inventory.lemons)))} lemons ·{' '}
+            {formatQty(displayCount('sugar', totalQty(state.inventory.sugar)))} sugar ·{' '}
+            {formatQty(displayCount('ice', totalQty(state.inventory.ice)), 0)} ice
           </p>
         </div>
         {mismatch && (

@@ -1,4 +1,5 @@
 import { CATALOG } from './catalog'
+import { formatQty } from './money'
 import type { DayPrices, Inventory, ItemId, Lot, Recipe } from './types'
 import { ITEM_IDS } from './types'
 
@@ -77,7 +78,8 @@ export function displayCount(item: ItemId, rawQty: number): number {
 
 export function formatStock(item: ItemId, rawQty: number): string {
   const amount = displayCount(item, rawQty)
-  const text = Number.isInteger(amount) ? String(amount) : (Math.round(amount * 10) / 10).toFixed(1)
+  // Cups and ice are whole units; lemons and sugar can be partial, shown with at most 2 decimals.
+  const text = item === 'cups' || item === 'ice' ? String(Math.round(amount)) : formatQty(amount)
   const many = amount !== 1
   if (item === 'lemons') return `${text} lemon${many ? 's' : ''}`
   if (item === 'sugar') return `${text} cup${many ? 's' : ''} of sugar`

@@ -58,7 +58,11 @@ export function Career({ onTitle, onNewSeason }: { onTitle: () => void; onNewSea
         <Receipt
           testId="career-receipt"
           title="Whole season"
-          subtitle={`${summary.daysOpened} of ${state.seasonDays} days open`}
+          subtitle={
+            state.endedEarly
+              ? `Ended after ${summary.daysPlayed} of ${state.seasonDays} days`
+              : `${summary.daysOpened} of ${state.seasonDays} days open`
+          }
           revenueCents={summary.totalRevenueCents}
           cogsCents={summary.totalCogsCents}
           grossCents={summary.totalGrossCents}

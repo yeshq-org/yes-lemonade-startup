@@ -7,6 +7,7 @@ import { createGame, type RunMeta } from '../game/setup'
 import { planCrowd, reviseCrowd } from '../game/sidewalk'
 import type { CartLine, GameState, ItemId, Keeper, SeasonLength } from '../game/types'
 import { clamp } from '../game/util'
+import { roundHalfAway } from '../game/money'
 
 export type Action =
   | { type: 'start'; seasonDays: SeasonLength; seed: number; keeper: Keeper; meta?: RunMeta | null }
@@ -27,6 +28,7 @@ export type Action =
   | { type: 'advance' }
   | { type: 'reflect'; index: 0 | 1 | 2; text: string }
   | { type: 'mark-posted' }
+  | { type: 'end-early' }
 
 function todayPrices(state: GameState) {
   return state.priceBook[state.day - 1]
@@ -174,6 +176,43 @@ export function reducer(state: GameState | null, action: Action): GameState | nu
         cart: [],
       }
     }
+    case 'end-early': {
+      // Finish the season at the money you have. Only between days: before opening (morning, shop, recipe)
+      // or after a day's report. A cart that was not checked out is dropped. Leftover stock is treated
+      // exactly like a normal season end: ice melts, lemons and sugar stay as supplies on hand.
+      if (!canEndEarly(state)) return state
+      let next = state
+      if (state.phase === 'report') {
+        next = reducer(state, { type: 'advance' })!
+        if (next.phase === 'career') return next
+      }
+      const melted = meltIce(next.inventory)
+      const history = [...next.history]
+      const last = history[history.length - 1]
+      if (last && melted.meltCents > 0) {
+        // Ice bought this morning melts too; book it on the last played day so the books still balance.
+        history[history.length - 1] = {
+          ...last,
+          iceMeltQty: last.iceMeltQty + melted.meltQty,
+          iceMeltCents: last.iceMeltCents + melted.meltCents,
+          wasteCents: (last.wasteCents ?? 0) + melted.meltCents,
+          otherCents: last.otherCents + melted.meltCents,
+          netCents: last.netCents - melted.meltCents,
+          earningsPerHourCents: last.hours > 0 ? roundHalfAway((last.netCents - melted.meltCents) / last.hours) : last.earningsPerHourCents,
+        }
+      }
+      return {
+        ...next,
+        inventory: melted.inventory,
+        history,
+        cart: [],
+        pending: null,
+        shelf: null,
+        arrivals: null,
+        phase: 'career',
+        endedEarly: history.length < next.seasonDays,
+      }
+    }
     case 'mark-posted':
       if (state.phase !== 'career') return state
       return { ...state, posted: true }
@@ -188,3 +227,15 @@ export function reducer(state: GameState | null, action: Action): GameState | nu
   }
 }
 
+
+/** Days that count if the player ends now. */
+export function daysIfEndedNow(state: GameState): number {
+  return state.history.length + (state.phase === 'report' && state.pending ? 1 : 0)
+}
+
+/** Individual seasons can end early between days, once at least one day has been played. */
+export function canEndEarly(state: GameState | null): boolean {
+  if (!state || state.mode === 'team_30') return false
+  if (!['morning', 'shop', 'recipe', 'report'].includes(state.phase)) return false
+  return daysIfEndedNow(state) >= 1
+}

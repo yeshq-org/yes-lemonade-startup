@@ -88,6 +88,7 @@ export function LeaderboardScreen({ onBack }: { onBack: () => void }) {
                   )}
                   <p className="text-sm text-ink-soft">
                     Net profit {formatMoney(row.net_cents)} · {formatHourly(row.earnings_per_hour_cents)}
+                    {row.days_played != null && ` · ${row.days_played}/${row.mode === 'team_30' ? 30 : 7} days`}
                   </p>
                 </li>
               ))}

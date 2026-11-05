@@ -160,6 +160,8 @@ export interface GameState {
   teamId: string | null
   /** True once the player chose to post this finished season to the leaderboard. */
   posted?: boolean
+  /** True when the player ended the season before the last day. */
+  endedEarly?: boolean
 }
 
 export const ITEM_IDS: ItemId[] = ['cups', 'lemons', 'sugar', 'ice']

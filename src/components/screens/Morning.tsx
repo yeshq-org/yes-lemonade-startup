@@ -4,6 +4,7 @@ import { formatHourly, formatMoney } from '../../game/money'
 import { weatherReadout } from '../../game/weather'
 import { useGame } from '../../state/GameContext'
 import { LemonMentor, WeatherArt } from '../art'
+import { EndGameNow } from '../EndGame'
 import { Header } from '../Header'
 import { Button, Card, Dock, Meter, Shell, useFocusHeading } from '../ui'
 
@@ -54,6 +55,7 @@ export function Morning({ onTitle }: { onTitle: () => void }) {
         <Button data-testid="ack-morning" onClick={() => dispatch({ type: 'ack-morning' })}>
           Shop for supplies
         </Button>
+        <EndGameNow />
       </Dock>
     </Shell>
   )

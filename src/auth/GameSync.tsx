@@ -1,12 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
+import { showToast } from '../components/toast'
 import { claimDay, errorText, finishGame, listOpenGames, releaseDay, saveSnapshot } from './api'
 import { normalizeSave } from '../game/storage'
 import { supabase } from '../lib/supabase'
 import type { GameState } from '../game/types'
 import { useGame } from '../state/GameContext'
 
-/** How long a toast stays on screen. */
-const TOAST_MS = 3500
 
 export function GameSync() {
   const { state, dispatch } = useGame()
@@ -15,19 +14,7 @@ export function GameSync() {
   /** Game id already closed on the server this session. */
   const posted = useRef<string | null>(null)
   const skipRelease = useRef(false)
-  const [toast, setToast] = useState<{ id: number; text: string } | null>(null)
-  const toastId = useRef(0)
-  const setNote = (text: string) => {
-    toastId.current += 1
-    setToast({ id: toastId.current, text })
-  }
-
-  // Every toast clears itself after a few seconds.
-  useEffect(() => {
-    if (!toast) return
-    const handle = window.setTimeout(() => setToast(null), TOAST_MS)
-    return () => window.clearTimeout(handle)
-  }, [toast])
+  const setNote = showToast
 
   useEffect(() => {
     if (!supabase || !state?.gameId || !state.mode || state.scoringVersion !== 1) {
@@ -89,15 +76,5 @@ export function GameSync() {
     }
   }, [state, dispatch])
 
-  if (!toast) return null
-  // Top of the screen and click-through, so a toast can never sit on the sticky action buttons.
-  return (
-    <p
-      role="status"
-      aria-live="polite"
-      className="pointer-events-none fixed top-3 left-1/2 z-50 w-[min(100%-2rem,24rem)] -translate-x-1/2 rounded-2xl bg-ink px-4 py-3 text-sm font-semibold text-cream shadow-lg"
-    >
-      {toast.text}
-    </p>
-  )
+  return null
 }

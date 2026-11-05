@@ -155,7 +155,7 @@ function Count({ label, value, testId }: { label: string; value: number; testId:
     <div className="rounded-2xl bg-sand px-2 py-3">
       <dt className="text-sm text-ink-soft">{label}</dt>
       <dd className="font-display text-2xl font-semibold" data-testid={testId}>
-        {value}
+        {Math.round(value)}
       </dd>
     </div>
   )

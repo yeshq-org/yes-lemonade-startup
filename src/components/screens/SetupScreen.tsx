@@ -23,6 +23,8 @@ import { supabase } from '../../lib/supabase'
 import type { GameMode, Keeper } from '../../game/types'
 import { useGame } from '../../state/GameContext'
 import { Button, Card, Shell, useFocusHeading } from '../ui'
+import { endConfirmText } from '../EndGame'
+import { canEndEarly, daysIfEndedNow } from '../../state/reducer'
 
 export function SetupScreen({
   onPlay,
@@ -59,7 +61,9 @@ export function SetupScreen({
       .catch(() => setOpenGames([]))
   }, [profile])
 
-  async function resume(row: GameRow) {
+  const [confirmEnd, setConfirmEnd] = useState<string | null>(null)
+
+  async function resume(row: GameRow, endNow = false) {
     setBusy(true)
     setError(null)
     try {
@@ -81,6 +85,7 @@ export function SetupScreen({
       })
       if (!loaded) throw new Error('The saved game could not be read')
       dispatch({ type: 'hydrate', state: loaded })
+      if (endNow && canEndEarly(loaded)) dispatch({ type: 'end-early' })
       onPlay()
     } catch (caught) {
       setError(errorText(caught))
@@ -222,6 +227,10 @@ export function SetupScreen({
   }
 
   const showWizard = !legacy || replaceLegacy
+  // A server game already loaded on this device is shown once, in the card above.
+  const serverGames = openGames.filter((game) => game.id !== active?.gameId)
+  const soloInProgress =
+    (active?.mode === 'individual_7' && active.phase !== 'career') || serverGames.some((game) => game.mode === 'individual_7')
 
   return (
     <Shell>
@@ -254,20 +263,74 @@ export function SetupScreen({
             <p className="font-semibold">
               {active.phase === 'career' ? 'Your latest season is finished.' : `Day ${active.day} is still open.`}
             </p>
-            <div className="mt-4">
+            <div className="mt-4 space-y-2">
               <Button data-testid="continue-run" onClick={onPlay}>
                 {active.phase === 'career' ? 'View the season report' : `Continue day ${active.day}`}
               </Button>
+              {canEndEarly(active) &&
+                (confirmEnd === 'local' ? (
+                  <div className="rounded-2xl bg-sand px-3 py-3" role="alertdialog" aria-label="End game" data-testid="end-confirm">
+                    <p className="font-semibold">{endConfirmText(daysIfEndedNow(active))}</p>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <Button variant="secondary" onClick={() => setConfirmEnd(null)}>
+                        Keep playing
+                      </Button>
+                      <Button
+                        data-testid="end-confirm-yes"
+                        onClick={() => {
+                          dispatch({ type: 'end-early' })
+                          setConfirmEnd(null)
+                          onPlay()
+                        }}
+                      >
+                        End game
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button variant="ghost" data-testid="end-game" onClick={() => setConfirmEnd('local')}>
+                    End this game
+                  </Button>
+                ))}
             </div>
           </Card>
         )}
-        {openGames.length > 0 && (
+        {serverGames.length > 0 && (
           <div className="mt-4 space-y-2">
-            {openGames.map((game) => (
-              <Button key={game.id} variant="secondary" disabled={busy} onClick={() => void resume(game)}>
-                {game.mode === 'team_30' ? `Team game · day ${game.locked_day ?? game.state.day}` : `Your 7-day game · day ${game.state.day}`}
-              </Button>
-            ))}
+            {serverGames.map((game) => {
+              const days = (game.state.history?.length ?? 0) + (game.state.phase === 'report' ? 1 : 0)
+              const endable = game.mode === 'individual_7' && days >= 1 && game.state.phase !== 'career'
+              return (
+                <Card key={game.id}>
+                  <p className="font-semibold">
+                    {game.mode === 'team_30' ? `Team game · day ${game.locked_day ?? game.state.day}` : `Your 7-day game is on day ${game.state.day}.`}
+                  </p>
+                  <div className="mt-3 space-y-2">
+                    <Button disabled={busy} onClick={() => void resume(game)}>
+                      Continue day {game.mode === 'team_30' ? (game.locked_day ?? game.state.day) : game.state.day}
+                    </Button>
+                    {endable &&
+                      (confirmEnd === game.id ? (
+                        <div className="rounded-2xl bg-sand px-3 py-3" role="alertdialog" aria-label="End game" data-testid="end-confirm">
+                          <p className="font-semibold">{endConfirmText(days)}</p>
+                          <div className="mt-3 grid grid-cols-2 gap-2">
+                            <Button variant="secondary" onClick={() => setConfirmEnd(null)}>
+                              Keep playing
+                            </Button>
+                            <Button data-testid="end-confirm-yes" disabled={busy} onClick={() => void resume(game, true)}>
+                              End game
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button variant="ghost" data-testid="end-game" onClick={() => setConfirmEnd(game.id)}>
+                          End this game
+                        </Button>
+                      ))}
+                  </div>
+                </Card>
+              )
+            })}
           </div>
         )}
         {showWizard && (
@@ -275,9 +338,15 @@ export function SetupScreen({
             {step === 'mode' && (
               <>
                 <p className="text-lg text-ink-soft">Individual is 7 days. Team is 30 days. Every sales day is still 8 hours.</p>
-                <Button data-testid="mode-individual" onClick={() => { setMode('individual_7'); setStep('visibility') }}>
-                  Individual · 7 days
-                </Button>
+                {soloInProgress ? (
+                  <p className="rounded-2xl bg-sand px-3 py-3 text-sm" data-testid="solo-in-progress">
+                    You already have a 7-day game going. Continue it or end it above to start a new one.
+                  </p>
+                ) : (
+                  <Button data-testid="mode-individual" onClick={() => { setMode('individual_7'); setStep('visibility') }}>
+                    Individual · 7 days
+                  </Button>
+                )}
                 <Button data-testid="mode-team" variant="secondary" onClick={() => { setMode('team_30'); setStep('visibility') }}>
                   Team · 30 days
                 </Button>

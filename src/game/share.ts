@@ -9,7 +9,9 @@ export const PLAY_URL = 'https://www.yeshq.org/lemonade'
 export function debriefText(summary: SeasonSummary, seasonDays: number, reflections: readonly string[]): string {
   const hourly = summary.earningsPerHourCents === null ? '—' : `${formatMoney(summary.earningsPerHourCents)}/hour`
   const lines = [
-    `My Y.E.S. Lemonade Startup season (${seasonDays} days)`,
+    summary.daysPlayed < seasonDays
+      ? `My Y.E.S. Lemonade Startup season (ended after ${summary.daysPlayed} of ${seasonDays} days)`
+      : `My Y.E.S. Lemonade Startup season (${seasonDays} days)`,
     `Net profit ${formatMoney(summary.totalNetCents)} · ${hourly} · ${TIER_META[summary.tier].name}`,
     `${summary.totalSales} cups sold · revenue ${formatMoney(summary.totalRevenueCents)}`,
   ]
