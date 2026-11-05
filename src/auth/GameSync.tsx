@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { claimDay, errorText, listOpenGames, releaseDay, saveSnapshot, submitFinishedGame } from './api'
-import { useAccount } from './AccountContext'
+import { claimDay, errorText, finishGame, listOpenGames, releaseDay, saveSnapshot } from './api'
 import { normalizeSave } from '../game/storage'
 import { supabase } from '../lib/supabase'
 import type { GameState } from '../game/types'
@@ -11,9 +10,9 @@ const TOAST_MS = 3500
 
 export function GameSync() {
   const { state, dispatch } = useGame()
-  const { profile } = useAccount()
   const last = useRef('')
   const previous = useRef<GameState | null>(null)
+  /** Game id already closed on the server this session. */
   const posted = useRef<string | null>(null)
   const skipRelease = useRef(false)
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null)
@@ -54,17 +53,11 @@ export function GameSync() {
       if (!current.gameId) return
       try {
         if (current.phase === 'career') {
-          if (!profile || posted.current === current.gameId) return
-          let teamName: string | null = null
-          if (current.teamId && supabase) {
-            const { data } = await supabase.from('teams').select('name').eq('id', current.teamId).maybeSingle()
-            teamName = typeof data?.name === 'string' ? data.name : null
-          }
-          await submitFinishedGame(current, profile.display_name, teamName)
+          // Close the season on the server. Posting to the leaderboard is a separate choice on the debrief screen.
+          if (posted.current === current.gameId) return
+          await finishGame(current.gameId, current)
           posted.current = current.gameId
           last.current = JSON.stringify(current)
-          // Only announce a score that was just finished in this session, never one found on a later load.
-          if (prior && prior.gameId === current.gameId && prior.phase !== 'career') setNote('Posted to the leaderboard.')
           return
         }
         const handoff =
@@ -94,7 +87,7 @@ export function GameSync() {
         setNote(errorText(caught))
       }
     }
-  }, [state, profile, dispatch])
+  }, [state, dispatch])
 
   if (!toast) return null
   // Top of the screen and click-through, so a toast can never sit on the sticky action buttons.

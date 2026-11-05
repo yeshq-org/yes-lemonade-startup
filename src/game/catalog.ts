@@ -5,26 +5,30 @@ export interface Pack {
   baseCents: number
 }
 
+/**
+ * Every bigger pack is clearly cheaper per piece (about 15% off, then about 30% off).
+ * Prices move day to day, but one factor moves a whole item so the bulk discount never flips.
+ */
 export const CATALOG: Record<ItemId, [Pack, Pack, Pack]> = {
   cups: [
-    { qty: 25, baseCents: 282 },
-    { qty: 50, baseCents: 512 },
-    { qty: 100, baseCents: 898 },
+    { qty: 25, baseCents: 250 },
+    { qty: 50, baseCents: 425 },
+    { qty: 100, baseCents: 700 },
   ],
   lemons: [
-    { qty: 10, baseCents: 680 },
-    { qty: 30, baseCents: 1620 },
-    { qty: 75, baseCents: 3300 },
+    { qty: 10, baseCents: 500 },
+    { qty: 30, baseCents: 1260 },
+    { qty: 75, baseCents: 2625 },
   ],
   sugar: [
-    { qty: 8, baseCents: 288 },
-    { qty: 20, baseCents: 650 },
-    { qty: 48, baseCents: 1560 },
+    { qty: 8, baseCents: 240 },
+    { qty: 20, baseCents: 500 },
+    { qty: 48, baseCents: 960 },
   ],
   ice: [
-    { qty: 100, baseCents: 188 },
-    { qty: 250, baseCents: 350 },
-    { qty: 500, baseCents: 625 },
+    { qty: 100, baseCents: 150 },
+    { qty: 250, baseCents: 300 },
+    { qty: 500, baseCents: 450 },
   ],
 }
 
@@ -40,19 +44,6 @@ export function packLabel(item: ItemId, qty: number): string {
   if (item === 'ice') return `${qty} cubes`
   if (item === 'lemons') return `${qty} lemons`
   return `${qty} cups`
-}
-
-export function bestPackIndex(item: ItemId, prices: DayPrices[ItemId]): number {
-  let best = 0
-  let bestUnit = Infinity
-  CATALOG[item].forEach((pack, index) => {
-    const unit = prices[index]! / pack.qty
-    if (unit < bestUnit - 1e-9) {
-      bestUnit = unit
-      best = index
-    }
-  })
-  return best
 }
 
 export function emptyPrices(): DayPrices {

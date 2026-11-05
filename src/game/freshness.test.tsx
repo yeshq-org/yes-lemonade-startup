@@ -24,7 +24,7 @@ describe('celsius', () => {
 })
 
 describe('spoilage', () => {
-  it('keeps lemons through the next two mornings and sugar through nine', () => {
+  it('keeps lemons for 3 days and sugar for 5, counting the day you buy', () => {
     let inv = emptyInventory()
     inv = addStock(inv, 'lemons', 10, 680, 1)
     inv = addStock(inv, 'sugar', 8, 288, 1)
@@ -33,13 +33,13 @@ describe('spoilage', () => {
     expect(spoilProduce(inv, 4).lemonsQty).toBe(120)
     expect(spoilProduce(inv, 4).lemonsCents).toBe(680)
     expect(spoilProduce(inv, 4).inventory.sugar).toHaveLength(1)
-    expect(spoilProduce(inv, 10).sugarQty).toBe(0)
-    expect(spoilProduce(inv, 11).sugarQty).toBe(96)
-    expect(spoilProduce(inv, 11).sugarCents).toBe(288)
-    expect(spoilProduce(inv, 11).inventory.cups).toHaveLength(1)
+    expect(spoilProduce(inv, 5).sugarQty).toBe(0)
+    expect(spoilProduce(inv, 6).sugarQty).toBe(96)
+    expect(spoilProduce(inv, 6).sugarCents).toBe(288)
+    expect(spoilProduce(inv, 6).inventory.cups).toHaveLength(1)
   })
 
-  it('removes lemons on the morning of day 4 and sugar on the morning of day 11', () => {
+  it('removes lemons on the morning of day 4 and sugar on the morning of day 6', () => {
     let state = createGame(14, 5)
     state = reducer(state, { type: 'ack-morning' })!
     state = reducer(state, { type: 'add-pack', item: 'lemons', packIndex: 0 })!
@@ -60,12 +60,12 @@ describe('spoilage', () => {
     expect(state.inventory.sugar.length).toBeGreaterThan(0)
     expect(state.inventory.cups.length).toBeGreaterThan(0)
     expect(state.history.find((day) => day.spoilLemonsCents > 0)?.spoilLemonsCents).toBe(lemonCost)
-    while (state.day < 11) state = closeDay(state)
-    expect(state.day).toBe(11)
+    while (state.day < 6) state = closeDay(state)
+    expect(state.day).toBe(6)
     expect(state.inventory.sugar).toEqual([])
     expect(state.inventory.cups.length).toBeGreaterThan(0)
     const sugarNight = state.history.find((day) => day.spoilSugarCents > 0)
-    expect(sugarNight?.day).toBe(10)
+    expect(sugarNight?.day).toBe(5)
     expect(sugarNight?.spoilSugarCents).toBe(sugarCost)
     expect(state.history.reduce((sum, day) => sum + day.cogsCents, 0)).toBe(0)
   })

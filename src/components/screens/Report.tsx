@@ -42,6 +42,7 @@ export function Report({ onTitle }: { onTitle: () => void }) {
           otherCents={day.otherCents}
           standFeeCents={day.standFeeCents}
           helperCents={day.helperCents}
+          waste={{ iceCents: day.iceMeltCents, lemonsCents: day.spoilLemonsCents, sugarCents: day.spoilSugarCents }}
           netCents={day.netCents}
           hours={day.hours}
           hourlyCents={day.earningsPerHourCents}
@@ -74,6 +75,19 @@ export function Report({ onTitle }: { onTitle: () => void }) {
               <li key={item}>{formatStock(item, day.onHand[item])}</li>
             ))}
           </ul>
+          {day.spoilLemonsCents + day.spoilSugarCents + day.iceMeltCents > 0 && (
+            <p className="mt-3 text-sm font-semibold">
+              Tonight:{' '}
+              {[
+                day.iceMeltQty > 0 ? `${formatStock('ice', day.iceMeltQty)} melt` : null,
+                day.spoilLemonsQty > 0 ? `${formatStock('lemons', day.spoilLemonsQty)} go bad` : null,
+                day.spoilSugarQty > 0 ? `${formatStock('sugar', day.spoilSugarQty)} go bad` : null,
+              ]
+                .filter(Boolean)
+                .join(', ')}
+              . That is {formatMoney(day.wasteCents ?? 0)} of waste, already on today's receipt.
+            </p>
+          )}
           <p className="mt-3 text-sm">Supplies on hand are worth {formatMoney(day.suppliesValueCents)} at what you paid.</p>
         </Card>
         <Card>

@@ -106,13 +106,23 @@ export function SidewalkDay({
         {figures.map(({ person, x }) => {
           if (person.counts && person.weight <= 0) return null
           const pose = poseOf(person, elapsed, frozen)
+          const ahead = frozen ? null : pedestrianX(person, elapsed + 0.05, width)
+          const facing = ahead !== null && ahead > x + 0.01 ? 1 : -1
+          // Smooth walk cycle, offset per person so the crowd is not in lockstep.
+          const phase = elapsed * Math.PI * 4 + person.id * 1.7
+          const sinceBuy = elapsed - person.take
+          const hop = !frozen && person.kind === 'buy' && sinceBuy >= 0 && sinceBuy < 0.45 ? Math.sin((sinceBuy / 0.45) * Math.PI) * 10 : 0
           return (
             <Person
               key={person.id}
               person={person}
               x={x}
               pose={pose}
-              step={Math.floor(elapsed * 5) % 2 === 0}
+              stride={frozen ? 0 : Math.sin(phase)}
+              bob={frozen || !(pose === 'walk' || pose === 'leave') ? 0 : Math.abs(Math.sin(phase)) * 3}
+              hop={hop}
+              facing={facing}
+              happy={person.kind === 'buy' && (pose === 'hold' || pose === 'leave')}
               cup={pose === 'hold' || pose === 'leave'}
               reach={reachAmount(person, elapsed, frozen)}
             />
@@ -155,19 +165,26 @@ function Person({
   person,
   x,
   pose,
-  step,
+  stride,
+  bob,
+  hop,
+  facing,
+  happy,
   cup,
   reach,
 }: {
   person: Pedestrian
   x: number
   pose: Pose
-  step: boolean
+  stride: number
+  bob: number
+  hop: number
+  facing: number
+  happy: boolean
   cup: boolean
   reach: number
 }) {
   const look = LOOKS[person.look % LOOKS.length]!
-  const bob = pose === 'walk' || pose === 'leave' ? (step ? -3 : 0) : 0
   return (
     <div
       data-testid="pedestrian"
@@ -175,9 +192,9 @@ function Person({
       data-pose={pose}
       data-cup={cup ? 'yes' : 'no'}
       className="absolute z-20 w-[66px]"
-      style={{ left: x, bottom: 0, transform: `translateY(${bob}px)` }}
+      style={{ left: x, bottom: 0, transform: `translateY(${-(bob + hop)}px)` }}
     >
-      <PersonFigure look={look} hair={person.look % 6} pose={pose} step={step} cup={cup} reach={reach} />
+      <PersonFigure look={look} hair={person.look % 6} pose={pose} stride={stride} cup={cup} reach={reach} facing={facing} happy={happy} />
     </div>
   )
 }

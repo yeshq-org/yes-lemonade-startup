@@ -39,17 +39,16 @@ export function rollWeather(rng: () => number): Weather {
   return { heat, sky, tempF }
 }
 
-function jitter(baseCents: number, rng: () => number): number {
-  const factor = 0.9 + rng() * 0.2
-  return Math.max(1, Math.round(baseCents * factor))
-}
-
 export function rollPrices(rng: () => number): DayPrices {
-  const item = (key: keyof DayPrices): [number, number, number] => [
-    jitter(CATALOG[key][0].baseCents, rng),
-    jitter(CATALOG[key][1].baseCents, rng),
-    jitter(CATALOG[key][2].baseCents, rng),
-  ]
+  // One factor per item per day, so a bigger pack always stays cheaper per piece.
+  const item = (key: keyof DayPrices): [number, number, number] => {
+    const factor = 0.9 + rng() * 0.2
+    return [
+      Math.max(1, Math.round(CATALOG[key][0].baseCents * factor)),
+      Math.max(1, Math.round(CATALOG[key][1].baseCents * factor)),
+      Math.max(1, Math.round(CATALOG[key][2].baseCents * factor)),
+    ]
+  }
   return {
     cups: item('cups'),
     lemons: item('lemons'),

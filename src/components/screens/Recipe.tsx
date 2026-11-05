@@ -90,10 +90,10 @@ export function Recipe({ onTitle }: { onTitle: () => void }) {
             <p className="font-display text-4xl font-semibold">{formatMoney(recipe.priceCents)}</p>
           </div>
           <div className="mt-2 flex gap-2">
-            <PriceNudge label="−25¢" delta={-25} />
-            <PriceNudge label="−5¢" delta={-5} />
-            <PriceNudge label="+5¢" delta={5} />
-            <PriceNudge label="+25¢" delta={25} />
+            <PriceNudge label="−50¢" delta={-50} />
+            <PriceNudge label="−10¢" delta={-10} />
+            <PriceNudge label="+10¢" delta={10} />
+            <PriceNudge label="+50¢" delta={50} />
           </div>
           {unit !== null && margin !== null && (
             <p className={cx('mt-2 text-sm font-semibold', margin < 10 && 'text-coral')}>

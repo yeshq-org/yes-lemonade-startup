@@ -109,8 +109,28 @@ export function estimateUnitCogsCents(inv: Inventory, recipe: Recipe): number | 
   return (cups.costCents + lemons.costCents + sugar.costCents + ice.costCents) / count
 }
 
-/** Lemons last 3 nights. Sugar lasts 10. Cups do not spoil. */
-export const SPOIL_NIGHTS = { lemons: 3, sugar: 10 } as const
+/**
+ * Shelf life in days, counting the day you buy. Ice lasts 1 day (it melts overnight).
+ * Lemons last 3 days and sugar 5, so lemons always go bad first. Cups never spoil.
+ */
+export const SPOIL_NIGHTS = { lemons: 3, sugar: 5 } as const
+
+/** Days left before a lot goes bad, counting today. 1 means "use it today". */
+export function daysLeft(lot: Lot, item: 'lemons' | 'sugar', today: number): number {
+  const bought = typeof lot.boughtDay === 'number' ? lot.boughtDay : today
+  return bought + SPOIL_NIGHTS[item] - today
+}
+
+/** Groups on-hand lemons or sugar by how many days they have left, soonest first. */
+export function expiryGroups(lots: Lot[], item: 'lemons' | 'sugar', today: number): { days: number; qty: number }[] {
+  const map = new Map<number, number>()
+  for (const lot of lots) {
+    if (lot.qty <= 0) continue
+    const days = daysLeft(lot, item, today)
+    map.set(days, (map.get(days) ?? 0) + lot.qty)
+  }
+  return [...map.entries()].sort((a, b) => a[0] - b[0]).map(([days, qty]) => ({ days, qty }))
+}
 
 export interface SpoilResult {
   inventory: Inventory
@@ -151,6 +171,26 @@ function splitFresh(lots: Lot[], morningDay: number, nights: number): { fresh: L
     }
   }
   return { fresh, qty, cents }
+}
+
+/**
+ * What tonight will destroy: all leftover ice, plus lemons and sugar that are gone by tomorrow morning.
+ * On the last day only ice counts, because the season ends and produce is kept as inventory.
+ */
+export function overnightWaste(inv: Inventory, day: number, lastDay: boolean) {
+  const melted = meltIce(inv)
+  const spoiled = lastDay
+    ? { lemonsQty: 0, lemonsCents: 0, sugarQty: 0, sugarCents: 0 }
+    : spoilProduce(melted.inventory, day + 1)
+  return {
+    iceMeltQty: melted.meltQty,
+    iceMeltCents: melted.meltCents,
+    spoilLemonsQty: spoiled.lemonsQty,
+    spoilLemonsCents: spoiled.lemonsCents,
+    spoilSugarQty: spoiled.sugarQty,
+    spoilSugarCents: spoiled.sugarCents,
+    wasteCents: melted.meltCents + spoiled.lemonsCents + spoiled.sugarCents,
+  }
 }
 
 export function meltIce(inv: Inventory): { inventory: Inventory; meltQty: number; meltCents: number } {

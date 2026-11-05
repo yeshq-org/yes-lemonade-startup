@@ -22,147 +22,117 @@ export const LOOKS: PersonLook[] = [
   { tone: '#f3d2b5', shade: '#e0b494', lip: '#d08980', iris: '#6a4a30', shirt: '#c4622d', hair: '#8a6239', pants: '#2c3d55', shoe: '#3f2a22' },
 ]
 
-/** Egg-shaped head: broader forehead, narrower chin. Used by buyers and the seller. */
-export function IllustratedHead({
+/**
+ * Friendly cartoon head: a round face, dot eyes that look where the person is going
+ * (never straight out at the player), rosy cheeks, and a simple smile.
+ * Happy faces close their eyes into little arcs.
+ */
+export function CartoonHead({
   cx,
   cy,
   skin,
-  shade,
-  lip,
-  iris,
   hair,
   style,
+  facing = -1,
+  happy = false,
   scale = 1,
 }: {
   cx: number
   cy: number
   skin: string
-  shade: string
-  lip: string
-  iris: string
   hair: string
   style: number
+  /** -1 looks left, 1 looks right. */
+  facing?: number
+  happy?: boolean
   scale?: number
 }) {
+  const fx = facing * 3.2
   return (
     <g transform={`translate(${cx} ${cy}) scale(${scale})`}>
-      <HairBack style={style} color={hair} />
-      <ellipse cx="-15" cy="2" rx="3.4" ry="5.4" fill={shade} />
-      <path d="M-13.2 1.2 q-1.6 3.2 1.2 5.6 q2.4 -1.6 1.4 -4.2 z" fill={skin} />
-      <path
-        d="M0 -23 C14 -22 16 -8 13 5 C11 15 6 23 0 24 C-6 23 -11 15 -13 5 C-16 -8 -14 -22 0 -23 Z"
-        fill={skin}
-      />
-      <path d="M-6 16 Q0 21 6 15 Q3 18 0 18 Q-3 18 -6 16" fill="#000" opacity="0.06" />
-      <path d="M-11 -8 Q-6 -11 -2 -8" fill="none" stroke={hair} strokeWidth="1.35" strokeLinecap="round" />
-      <path d="M2.4 -8.2 Q7 -11.2 11.2 -7.4" fill="none" stroke={hair} strokeWidth="1.35" strokeLinecap="round" />
-      <Eye cx={-5.6} iris={iris} />
-      <Eye cx={5.4} iris={iris} />
-      <path d="M-0.4 -1.5 Q1.6 5 0.2 7.2" fill="none" stroke={shade} strokeWidth="1.15" strokeLinecap="round" />
-      <path d="M-2.4 7.4 Q0.2 8.8 2.6 7.2" fill="none" stroke={shade} strokeWidth="0.9" strokeLinecap="round" />
-      <path d="M-3.6 12.2 Q0 13.6 3.6 12.2 Q0 15  -3.6 12.2" fill={lip} />
+      <HairBack style={style} color={hair} facing={facing} />
+      <circle cx="0" cy="0" r="17" fill={skin} />
+      <circle cx={-8 + fx} cy="6" r="2.8" fill="#ff8f7a" opacity="0.45" />
+      <circle cx={8 + fx} cy="6" r="2.8" fill="#ff8f7a" opacity="0.45" />
+      {happy ? (
+        <g fill="none" stroke="#1c1915" strokeWidth="1.7" strokeLinecap="round" data-eyes="happy">
+          <path d={`M${-7.6 + fx} 0 q2.3 -2.8 4.6 0`} />
+          <path d={`M${3 + fx} 0 q2.3 -2.8 4.6 0`} />
+        </g>
+      ) : (
+        <g fill="#1c1915" data-eyes="dots">
+          <ellipse cx={-5.3 + fx + facing * 0.8} cy="-0.6" rx="1.7" ry="2.2" />
+          <ellipse cx={5.3 + fx + facing * 0.8} cy="-0.6" rx="1.7" ry="2.2" />
+        </g>
+      )}
+      {happy ? (
+        <path d={`M${-4 + fx} 6.5 q4 5 8 0 z`} fill="#8a3b2e" />
+      ) : (
+        <path d={`M${-3 + fx} 7.5 q3 2.6 6 0`} fill="none" stroke="#1c1915" strokeWidth="1.4" strokeLinecap="round" />
+      )}
       <HairFront style={style} color={hair} />
     </g>
   )
 }
 
-function Eye({ cx, iris }: { cx: number; iris: string }) {
-  return (
-    <g>
-      <path
-        d={`M${cx - 3.3} -3.2 Q${cx} -5.1 ${cx + 3.3} -3.1 Q${cx} -1.2 ${cx - 3.3} -3.2`}
-        fill="#fffaf4"
-      />
-      <circle cx={cx + 0.2} cy="-3.15" r="1.25" fill={iris} />
-      <circle cx={cx + 0.2} cy="-3.15" r="0.62" fill="#24180f" />
-      <circle cx={cx - 0.35} cy="-3.55" r="0.32" fill="#fff" />
-    </g>
-  )
-}
-
-function HairBack({ style, color }: { style: number; color: string }) {
-  if (style === 1) return <path d="M-14 -6 C-18 -28 16 -30 14 -4 L12 18 C4 10 -8 12 -14 20 Z" fill={color} />
+function HairBack({ style, color, facing }: { style: number; color: string; facing: number }) {
+  if (style === 1) return <path d="M-19 0 a19 19 0 0 1 38 0 v16 q-4 4 -8 0 v-10 h-22 v10 q-4 4 -8 0 z" fill={color} />
   if (style === 2) {
     return (
       <g fill={color}>
-        <path d="M-14 -8 C-16 -26 16 -28 14 -6 C8 -16 -8 -16 -14 -8" />
-        <circle cx="-12" cy="-4" r="6" />
-        <circle cx="11" cy="-6" r="5.5" />
-        <circle cx="0" cy="-20" r="6" />
+        {[-15, -9, -2, 5, 12, 16].map((x, i) => (
+          <circle key={x} cx={x} cy={i % 2 === 0 ? -12 : -15} r="7" />
+        ))}
       </g>
     )
   }
-  if (style === 3) return <path d="M-13 -10 C-14 -24 14 -26 13 -8 C8 -16 -8 -16 -13 -10" fill={color} />
-  if (style === 4) {
-    return (
-      <g fill={color}>
-        <path d="M-14 -8 C-16 -26 15 -28 13 -6 C7 -16 -8 -16 -14 -8" />
-        <path d="M6 -14 C12 -6 13 10 8 16 C14 6 12 -8 6 -14" />
-      </g>
-    )
-  }
-  if (style === 5) return <path d="M-12 -12 C-10 -24 12 -26 11 -10 C6 -18 -6 -18 -12 -12" fill={color} />
-  return <path d="M-13 -8 C-16 -26 15 -27 13 -6 C7 -16 -8 -16 -13 -8" fill={color} />
+  if (style === 4) return <circle cx={-facing * 18} cy="-4" r="6.5" fill={color} />
+  if (style === 5) return <circle cx="0" cy="-19" r="7" fill={color} />
+  return null
 }
 
 function HairFront({ style, color }: { style: number; color: string }) {
-  if (style === 3 || style === 5) return null
-  if (style === 1) return <path d="M-10 -16 Q0 -23 9 -15 Q2 -19 -8 -16" fill={color} />
-  if (style === 2) return <path d="M-8 -15 Q0 -22 8 -14" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" />
-  return <path d="M-9 -16 Q0 -22 10 -14 Q3 -18 -7 -15" fill={color} />
+  if (style === 2) return null
+  if (style === 3) return <path d="M-16 -6 a16.5 16.5 0 0 1 32 0 q-16 -7 -32 0 z" fill={color} />
+  return <path d="M-17.5 -3 a17.5 17.5 0 0 1 35 0 q-7 -9 -17.5 -7 q-10 -2 -17.5 7 z" fill={color} />
 }
 
 export function PersonFigure({
   look,
   hair,
   pose,
-  step,
+  stride: swing = 0,
   cup,
   reach = 1,
+  facing = -1,
+  happy = false,
 }: {
   look: PersonLook
   hair: number
   pose: Pose
-  step: boolean
+  /** Smooth walk cycle from -1 to 1. */
+  stride?: number
   cup: boolean
   reach?: number
+  facing?: number
+  happy?: boolean
 }) {
   const walking = pose === 'walk' || pose === 'leave'
-  const stride = walking ? (step ? 1 : -1) : 0
-  const nearShoulder = pose === 'reach' ? -72 - 16 * reach : pose === 'hold' || pose === 'leave' ? -18 : stride * -12
-  const nearElbow = pose === 'reach' ? -18 : pose === 'hold' || pose === 'leave' ? -14 : stride * 8
-  const farShoulder = walking ? stride * 14 : 6
-  const farElbow = walking ? stride * -8 : 4
+  const stride = walking ? swing : 0
+  const nearShoulder = pose === 'reach' ? -72 - 16 * reach : pose === 'hold' || pose === 'leave' ? -30 : stride * -24
+  const nearElbow = pose === 'reach' ? -10 : pose === 'hold' || pose === 'leave' ? -40 : stride * 10
+  const farShoulder = walking ? stride * 24 : 8
+  const farElbow = walking ? stride * -6 : 4
 
   return (
     <svg viewBox="0 0 78 148" className="h-[124px] w-[66px] overflow-visible" aria-hidden="true">
-      <ellipse cx="40" cy="144" rx="14" ry="2.4" fill="#1c1915" opacity="0.14" />
-      <Leg hipX={48} hipY={86} hip={walking ? stride * 16 : 3} knee={walking ? (stride > 0 ? 18 : 6) : 3} pants={look.pants} shoe={look.shoe} />
-      <Arm shoulderX={52} shoulderY={58} shoulder={farShoulder} elbow={farElbow} skin={look.tone} sleeve={look.shirt} cup={false} />
-      <Leg hipX={34} hipY={86} hip={walking ? stride * -16 : -3} knee={walking ? (stride > 0 ? 6 : 18) : 3} pants={look.pants} shoe={look.shoe} />
-      <path d="M24 56 q16 6 32 0 l4 26 q-3 8 -20 9 q-18 -1 -20 -9 z" fill={look.shirt} />
-      <path d="M36 78 h10 l-1 8 h-8 z" fill={look.pants} />
-      <path d="M34 52 h12 v7 h-12 z" fill={look.tone} />
-      <Arm
-        shoulderX={28}
-        shoulderY={57}
-        shoulder={nearShoulder}
-        elbow={nearElbow}
-        skin={look.tone}
-        sleeve={look.shirt}
-        cup={cup}
-      />
-      <IllustratedHead
-        cx={40}
-        cy={30}
-        scale={0.92}
-        skin={look.tone}
-        shade={look.shade}
-        lip={look.lip}
-        iris={look.iris}
-        hair={look.hair}
-        style={hair}
-      />
+      <ellipse cx="40" cy="144" rx="14" ry="2.6" fill="#1c1915" opacity="0.14" />
+      <Leg hipX={46} hipY={90} hip={walking ? stride * 22 : 3} pants={look.pants} shoe={look.shoe} facing={facing} />
+      <Arm shoulderX={50} shoulderY={62} shoulder={farShoulder} elbow={farElbow} skin={look.tone} sleeve={look.shirt} cup={false} />
+      <Leg hipX={34} hipY={90} hip={walking ? stride * -22 : -3} pants={look.pants} shoe={look.shoe} facing={facing} />
+      <rect x="25" y="54" width="30" height="40" rx="14" fill={look.shirt} />
+      <Arm shoulderX={30} shoulderY={62} shoulder={nearShoulder} elbow={nearElbow} skin={look.tone} sleeve={look.shirt} cup={cup} />
+      <CartoonHead cx={40} cy={34} skin={look.tone} hair={look.hair} style={hair} facing={facing} happy={happy} />
     </svg>
   )
 }
@@ -171,24 +141,21 @@ function Leg({
   hipX,
   hipY,
   hip,
-  knee,
   pants,
   shoe,
+  facing,
 }: {
   hipX: number
   hipY: number
   hip: number
-  knee: number
   pants: string
   shoe: string
+  facing: number
 }) {
   return (
     <g transform={`rotate(${hip} ${hipX} ${hipY})`}>
-      <path d={`M${hipX - 5} ${hipY} h10 v16 q0 3 -5 4 q-5 -1 -5 -4 z`} fill={pants} />
-      <g transform={`rotate(${knee} ${hipX} ${hipY + 18})`}>
-        <path d={`M${hipX - 4.5} ${hipY + 16} h9 v16 q0 3 -4.5 3 q-4.5 0 -4.5 -3 z`} fill={pants} />
-        <path d={`M${hipX - 6} ${hipY + 33} h14 v4.5 q0 1.5 -2 1.5 h-11 q-1.5 0 -1 -1.5 z`} fill={shoe} />
-      </g>
+      <path d={`M${hipX} ${hipY} V${hipY + 44}`} stroke={pants} strokeWidth="10" strokeLinecap="round" />
+      <ellipse cx={hipX + facing * 3} cy={hipY + 49} rx="7.5" ry="4" fill={shoe} />
     </g>
   )
 }
@@ -210,16 +177,15 @@ function Arm({
   sleeve: string
   cup: boolean
 }) {
-  const upper = 16
-  const fore = 15
+  const upper = 15
+  const fore = 13
   return (
     <g transform={`rotate(${shoulder} ${shoulderX} ${shoulderY})`}>
-      <path d={`M${shoulderX - 4} ${shoulderY - 1} h8 v${upper} q0 2.5 -4 2.5 t-4 -2.5 z`} fill={sleeve} />
+      <path d={`M${shoulderX} ${shoulderY} V${shoulderY + upper}`} stroke={sleeve} strokeWidth="8" strokeLinecap="round" />
       <g transform={`rotate(${elbow} ${shoulderX} ${shoulderY + upper})`}>
-        <path d={`M${shoulderX - 3.2} ${shoulderY + upper - 1} h6.4 v${fore} q0 2 -3.2 2 t-3.2 -2 z`} fill={skin} />
+        <path d={`M${shoulderX} ${shoulderY + upper} V${shoulderY + upper + fore}`} stroke={skin} strokeWidth="6.5" strokeLinecap="round" />
         <g transform={`translate(${shoulderX} ${shoulderY + upper + fore})`}>
-          <ellipse cx="0" cy="1" rx="4.2" ry="3" fill={skin} />
-          <ellipse cx="-3.4" cy="0.4" rx="1.5" ry="2.2" fill={skin} />
+          <circle cx="0" cy="1" r="4.6" fill={skin} />
           {cup && (
             <g transform="translate(0 1)">
               <path d="M-5 0 h11 l-1.4 10 h-8.2 z" fill="#ffe14a" stroke="#c98400" strokeWidth="0.8" />
@@ -264,17 +230,7 @@ export function StandingSeller({ keeper, offering }: { keeper: Keeper; offering:
           <ellipse cx="114" cy="114" rx="5" ry="3" fill={look.tone} />
         </g>
       )}
-      <IllustratedHead
-        cx={86}
-        cy={64}
-        scale={0.84}
-        skin={look.tone}
-        shade={look.shade}
-        lip={look.lip}
-        iris={look.iris}
-        hair={look.hair}
-        style={look.style}
-      />
+      <CartoonHead cx={86} cy={62} scale={0.95} skin={look.tone} hair={look.hair} style={look.style} facing={1} happy={offering} />
     </g>
   )
 }

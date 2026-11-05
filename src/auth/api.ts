@@ -198,3 +198,9 @@ export async function submitFinishedGame(state: GameState, displayName: string, 
   })
   if (error) throw error
 }
+
+/** Close a finished season without posting it. It stays in the player's own games. */
+export async function finishGame(gameId: string, state: GameState): Promise<void> {
+  const { error } = await client().rpc('finish_game', { p_game_id: gameId, p_state: state })
+  if (error) throw error
+}

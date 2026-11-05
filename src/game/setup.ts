@@ -8,7 +8,7 @@ export const DEFAULT_RECIPE: Recipe = {
   lemons: 4,
   sugar: 4,
   ice: 4,
-  priceCents: 150,
+  priceCents: 300,
 }
 
 export interface RunMeta {

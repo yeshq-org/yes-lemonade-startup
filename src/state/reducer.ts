@@ -26,6 +26,7 @@ export type Action =
   | { type: 'to-report' }
   | { type: 'advance' }
   | { type: 'reflect'; index: 0 | 1 | 2; text: string }
+  | { type: 'mark-posted' }
 
 function todayPrices(state: GameState) {
   return state.priceBook[state.day - 1]
@@ -123,6 +124,7 @@ export function reducer(state: GameState | null, action: Action): GameState | nu
         hours: DAY_HOURS,
         popularity: state.popularity,
         previousSatisfaction: previous?.satisfaction ?? null,
+        lastDay: state.day >= state.seasonDays,
       })
       const fees = dayFees(DAY_HOURS)
       const cashAfterFeesCents = state.cashCents - fees.standFeeCents - fees.helperCents
@@ -172,6 +174,9 @@ export function reducer(state: GameState | null, action: Action): GameState | nu
         cart: [],
       }
     }
+    case 'mark-posted':
+      if (state.phase !== 'career') return state
+      return { ...state, posted: true }
     case 'reflect': {
       const text = action.text.slice(0, 280)
       const reflections: [string, string, string] = [...state.reflections]

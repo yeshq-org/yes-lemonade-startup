@@ -38,6 +38,7 @@ function day(overrides: Partial<DayResult> = {}): DayResult {
     standFeeCents: 150,
     helperCents: 0,
     otherCents: 150,
+    wasteCents: 0,
     netCents: 1950,
     earningsPerHourCents: 244,
     satisfaction: 80,

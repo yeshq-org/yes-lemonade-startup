@@ -125,10 +125,10 @@ function PriceOnTheCurb({ priceCents, onChange }: { priceCents: number; onChange
         </div>
         <div className="flex min-w-0 flex-1 basis-full gap-1 min-[480px]:basis-auto">
           {[
-            ['−25¢', -25],
-            ['−5¢', -5],
-            ['+5¢', 5],
-            ['+25¢', 25],
+            ['−50¢', -50],
+            ['−10¢', -10],
+            ['+10¢', 10],
+            ['+50¢', 50],
           ].map(([label, delta]) => {
             const next = priceCents + Number(delta)
             return (

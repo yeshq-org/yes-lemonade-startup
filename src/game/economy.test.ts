@@ -12,7 +12,8 @@ import type { GameState, ItemId } from './types'
 function assertIdentity(day: GameState['history'][number]) {
   expect(day.grossCents).toBe(day.revenueCents - day.cogsCents)
   expect(day.netCents).toBe(day.grossCents - day.otherCents)
-  expect(day.otherCents).toBe(day.standFeeCents + day.helperCents)
+  expect(day.wasteCents).toBe(day.iceMeltCents + day.spoilLemonsCents + day.spoilSugarCents)
+  expect(day.otherCents).toBe(day.standFeeCents + day.helperCents + day.wasteCents)
   expect(day.sold + day.walkedAway + day.soldOutMissed).toBe(day.potential)
   if (day.hours === 0) expect(day.earningsPerHourCents).toBeNull()
   else expect(day.earningsPerHourCents).toBe(Math.sign(day.netCents / day.hours) * Math.round(Math.abs(day.netCents / day.hours)))
@@ -20,13 +21,12 @@ function assertIdentity(day: GameState['history'][number]) {
 
 function assertBooks(state: GameState) {
   const summary = summarize(state)
-  const melt = state.history.reduce((sum, day) => sum + day.iceMeltCents, 0)
-  const spoiled = state.history.reduce((sum, day) => sum + day.spoilLemonsCents + day.spoilSugarCents, 0)
   const net = state.history.reduce((sum, day) => sum + day.netCents, 0)
   expect(summary.totalNetCents).toBe(net)
   expect(summary.totalGrossCents).toBe(summary.totalRevenueCents - summary.totalCogsCents)
   expect(summary.netWorthCents).toBe(state.cashCents + inventoryValueCents(state.inventory))
-  expect(summary.netWorthCents).toBe(STARTING_CASH_CENTS + net - melt - spoiled)
+  // Melted ice and spoiled produce are other expenses inside net profit, so net worth tracks net exactly.
+  expect(summary.netWorthCents).toBe(STARTING_CASH_CENTS + net)
   for (const day of state.history) assertIdentity(day)
 }
 
@@ -214,9 +214,10 @@ describe('season', () => {
     expect(state.pending?.hours).toBe(DAY_HOURS)
     expect(state.pending?.standFeeCents).toBe(150)
     expect(state.pending?.helperCents).toBe(0)
-    expect(state.pending?.netCents).toBe(-150)
-    expect(state.pending?.earningsPerHourCents).toBe(-19)
     expect(state.pending?.iceMeltCents).toBe(iceCost)
+    expect(state.pending?.wasteCents).toBe(iceCost)
+    expect(state.pending?.netCents).toBe(-150 - iceCost)
+    expect(state.pending?.earningsPerHourCents).toBe(-Math.round((150 + iceCost) / 8))
     state = reducer(state, { type: 'to-report' })!
     state = reducer(state, { type: 'advance' })!
     expect(state.inventory.ice).toEqual([])
@@ -254,15 +255,33 @@ describe('season', () => {
   it('lets the four small packs fit in the starting $20', () => {
     const items = ['cups', 'lemons', 'sugar', 'ice'] as const
     const base = items.reduce((sum, item) => sum + CATALOG[item][0].baseCents, 0)
-    expect(base).toBe(282 + 680 + 288 + 188)
+    expect(base).toBe(250 + 500 + 240 + 150)
     expect(base).toBeLessThanOrEqual(STARTING_CASH_CENTS)
     const worstDay = items.reduce((sum, item) => sum + Math.round(CATALOG[item][0].baseCents * 1.1), 0)
     expect(worstDay).toBeLessThanOrEqual(STARTING_CASH_CENTS)
   })
 
-  it('prices a hot clear cup near $2.10 and a cold rain near 75 cents', () => {
-    expect(fairPriceCents({ heat: 'hot', sky: 'clear', tempF: 96 }, 100, 100)).toBe(210)
-    expect(fairPriceCents({ heat: 'cold', sky: 'rain', tempF: 48 }, 0, 0)).toBe(75)
+  it('prices a great hot clear cup near $5.10 and a bad cold rain cup at $1.50', () => {
+    expect(fairPriceCents({ heat: 'hot', sky: 'clear', tempF: 96 }, 100, 100)).toBe(510)
+    expect(fairPriceCents({ heat: 'warm', sky: 'clear', tempF: 82 }, 100, 100)).toBe(460)
+    expect(fairPriceCents({ heat: 'cold', sky: 'rain', tempF: 48 }, 0, 0)).toBe(150)
+  })
+
+  it('still sells a $4.50 cup on a good warm day and loses most people at $7', () => {
+    const fair = fairPriceCents({ heat: 'warm', sky: 'clear', tempF: 82 }, 100, 100)
+    expect(buyRate(450, fair, 100)).toBeGreaterThan(0.8)
+    expect(buyRate(700, fair, 100)).toBeLessThan(0.3)
+  })
+
+  it('makes every bigger pack clearly cheaper per piece, every day', () => {
+    const state = createGame(30, 77)
+    for (const day of state.priceBook) {
+      for (const item of ['cups', 'lemons', 'sugar', 'ice'] as const) {
+        const unit = day[item].map((price, index) => price / CATALOG[item][index].qty)
+        expect(unit[1]!).toBeLessThan(unit[0]! * 0.9)
+        expect(unit[2]!).toBeLessThan(unit[1]! * 0.9)
+      }
+    }
   })
 
   it('prices stay inside a 10 percent band', () => {

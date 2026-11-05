@@ -8,7 +8,7 @@ import {
   satisfactionScore,
   tasteScore,
 } from './demand'
-import { cloneInventory, consume, cupsFromInventory, inventoryValueCents, onHandRaw } from './inventory'
+import { cloneInventory, consume, cupsFromInventory, inventoryValueCents, onHandRaw, overnightWaste } from './inventory'
 import { roundHalfAway } from './money'
 import { mulberry32 } from './rng'
 import type { DayResult, Hours, Inventory, Recipe, Weather } from './types'
@@ -30,6 +30,8 @@ export function simulateDay(input: {
   hours: Hours
   popularity: number
   previousSatisfaction: number | null
+  /** Last day of the season: lemons and sugar are not spoiled overnight. */
+  lastDay?: boolean
 }): { result: DayResult; inventory: Inventory; cashDeltaCents: number; popularity: number } {
   const { recipe, weather, hours } = input
   const taste = tasteScore(recipe.lemons, recipe.sugar)
@@ -59,7 +61,8 @@ export function simulateDay(input: {
 
   const revenueCents = sold * recipe.priceCents
   const fees = dayFees(hours)
-  const otherCents = fees.standFeeCents + fees.helperCents
+  const waste = overnightWaste(inventory, input.day, input.lastDay ?? false)
+  const otherCents = fees.standFeeCents + fees.helperCents + waste.wasteCents
   const grossCents = revenueCents - cogsCents
   const netCents = grossCents - otherCents
   const earningsPerHourCents = hours > 0 ? roundHalfAway(netCents / hours) : null
@@ -68,9 +71,6 @@ export function simulateDay(input: {
     hours <= 0 || potential === 0 ? null : Math.round(satisfactionScore(taste, comfort, ratio))
   const soldOutRatio = willing > 0 ? soldOutMissed / willing : 0
   const popularity = nextPopularity(input.popularity, satisfaction, soldOutRatio, input.previousSatisfaction)
-  const iceLots = inventory.ice
-  const iceMeltQty = iceLots.reduce((sum, lot) => sum + lot.qty, 0)
-  const iceMeltCents = iceLots.reduce((sum, lot) => sum + lot.costCents, 0)
 
   const result: DayResult = {
     day: input.day,
@@ -88,6 +88,8 @@ export function simulateDay(input: {
     standFeeCents: fees.standFeeCents,
     helperCents: fees.helperCents,
     otherCents,
+    wasteCents: waste.wasteCents,
+    lastDay: input.lastDay ?? false,
     netCents,
     earningsPerHourCents,
     satisfaction,
@@ -95,12 +97,12 @@ export function simulateDay(input: {
     iceComfort: Math.round(comfort),
     popularityBefore: input.popularity,
     popularityAfter: popularity,
-    iceMeltQty,
-    iceMeltCents,
-    spoilLemonsQty: 0,
-    spoilLemonsCents: 0,
-    spoilSugarQty: 0,
-    spoilSugarCents: 0,
+    iceMeltQty: waste.iceMeltQty,
+    iceMeltCents: waste.iceMeltCents,
+    spoilLemonsQty: waste.spoilLemonsQty,
+    spoilLemonsCents: waste.spoilLemonsCents,
+    spoilSugarQty: waste.spoilSugarQty,
+    spoilSugarCents: waste.spoilSugarCents,
     fairPriceCents: fair,
     cupsReady,
     onHand: onHandRaw(inventory),
@@ -110,7 +112,7 @@ export function simulateDay(input: {
   return {
     result,
     inventory,
-    cashDeltaCents: revenueCents - otherCents,
+    cashDeltaCents: revenueCents - fees.standFeeCents - fees.helperCents,
     popularity,
   }
 }

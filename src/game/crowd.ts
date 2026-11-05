@@ -1,5 +1,5 @@
 import { dayFees, nextPopularity, satisfactionScore } from './demand'
-import { cloneInventory, consume, inventoryValueCents, onHandRaw } from './inventory'
+import { cloneInventory, consume, inventoryValueCents, onHandRaw, overnightWaste } from './inventory'
 import { roundHalfAway } from './money'
 import type { Arrival, DayResult, Inventory } from './types'
 
@@ -34,7 +34,8 @@ export function settleCrowd(base: DayResult, people: Arrival[], shelf: Inventory
   }
 
   const fees = dayFees(base.hours)
-  const otherCents = fees.standFeeCents + fees.helperCents
+  const waste = overnightWaste(inventory, base.day, base.lastDay ?? false)
+  const otherCents = fees.standFeeCents + fees.helperCents + waste.wasteCents
   const grossCents = revenueCents - cogsCents
   const netCents = grossCents - otherCents
   const earningsPerHourCents = base.hours > 0 ? roundHalfAway(netCents / base.hours) : null
@@ -48,8 +49,6 @@ export function settleCrowd(base: DayResult, people: Arrival[], shelf: Inventory
   const satisfaction = base.hours <= 0 || potential === 0 ? null : Math.round(satisfactionScore(base.taste, base.iceComfort, ratio))
   const soldOutRatio = willing > 0 ? soldOutMissed / willing : 0
   const popularity = nextPopularity(base.popularityBefore, satisfaction, soldOutRatio, null)
-  const iceMeltQty = inventory.ice.reduce((sum, lot) => sum + lot.qty, 0)
-  const iceMeltCents = inventory.ice.reduce((sum, lot) => sum + lot.costCents, 0)
 
   return {
     inventory,
@@ -67,12 +66,17 @@ export function settleCrowd(base: DayResult, people: Arrival[], shelf: Inventory
       standFeeCents: fees.standFeeCents,
       helperCents: fees.helperCents,
       otherCents,
+      wasteCents: waste.wasteCents,
       netCents,
       earningsPerHourCents,
       satisfaction,
       popularityAfter: popularity,
-      iceMeltQty,
-      iceMeltCents,
+      iceMeltQty: waste.iceMeltQty,
+      iceMeltCents: waste.iceMeltCents,
+      spoilLemonsQty: waste.spoilLemonsQty,
+      spoilLemonsCents: waste.spoilLemonsCents,
+      spoilSugarQty: waste.spoilSugarQty,
+      spoilSugarCents: waste.spoilSugarCents,
       cupsReady: base.cupsReady,
       onHand: onHandRaw(inventory),
       suppliesValueCents: inventoryValueCents(inventory),

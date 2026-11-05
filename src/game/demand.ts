@@ -52,10 +52,10 @@ export function expectedVisitors(weather: Weather, hours: number, popularity: nu
 }
 
 export function trafficWord(visitors: number): string {
-  if (visitors >= 90) return 'Buzzing'
-  if (visitors >= 65) return 'Busy'
-  if (visitors >= 40) return 'Steady'
-  if (visitors >= 20) return 'Light'
+  if (visitors >= 55) return 'Buzzing'
+  if (visitors >= 40) return 'Busy'
+  if (visitors >= 25) return 'Steady'
+  if (visitors >= 12) return 'Light'
   return 'Quiet'
 }
 
@@ -88,12 +88,12 @@ export function iceCaption(score: number): string {
 
 /** What a happy customer is glad to pay, in cents, before we apply elasticity. */
 export function fairPriceCents(weather: Weather, taste: number, comfort: number): number {
-  let cents = 100
-  cents += { hot: 50, warm: 25, cool: 0, cold: -15 }[weather.heat]
-  cents += { clear: 20, cloudy: 5, rain: -15 }[weather.sky]
-  cents += Math.round((clamp(taste, 0, 100) / 100) * 25)
-  cents += Math.round((clamp(comfort, 0, 100) / 100) * 15)
-  return clamp(cents, 75, 250)
+  let cents = 220
+  cents += { hot: 110, warm: 60, cool: 0, cold: -40 }[weather.heat]
+  cents += { clear: 50, cloudy: 10, rain: -40 }[weather.sky]
+  cents += Math.round((clamp(taste, 0, 100) / 100) * 90)
+  cents += Math.round((clamp(comfort, 0, 100) / 100) * 40)
+  return clamp(cents, 150, 520)
 }
 
 export function buyRate(priceCents: number, fairCents: number, taste: number): number {
@@ -101,8 +101,8 @@ export function buyRate(priceCents: number, fairCents: number, taste: number): n
   let rate: number
   if (ratio <= 0.8) rate = 0.97
   else if (ratio <= 1.05) rate = 0.97 - ((ratio - 0.8) / 0.25) * 0.12
-  else if (ratio <= 1.45) rate = 0.85 - ((ratio - 1.05) / 0.4) * 0.45
-  else rate = Math.max(0.05, 0.4 - (ratio - 1.45) * 0.35)
+  else if (ratio <= 1.35) rate = 0.85 - ((ratio - 1.05) / 0.3) * 0.5
+  else rate = Math.max(0.03, 0.35 - (ratio - 1.35) * 0.8)
   const tasteFactor = 0.3 + 0.7 * (taste / 100)
   return clamp(rate * tasteFactor, 0, 0.98)
 }

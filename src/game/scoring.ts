@@ -175,8 +175,8 @@ function gradeBadges(state: GameState, summary: SeasonSummary): Badge[] {
     {
       id: 'worth-your-time',
       name: 'Worth Your Time',
-      description: 'Season earnings reached $4.00 an hour or more.',
-      earned: (summary.earningsPerHourCents ?? 0) >= 400,
+      description: 'Season earnings reached $12.00 an hour or more, about minimum wage.',
+      earned: (summary.earningsPerHourCents ?? 0) >= 1200,
     },
     {
       id: 'closer',

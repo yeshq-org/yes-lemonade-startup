@@ -38,6 +38,7 @@ export function normalizeSave(value: unknown): GameState | null {
     arrivals: normalizeArrivals(value.arrivals),
     history: value.history.map((day) => ({
       ...day,
+      wasteCents: day.wasteCents ?? 0,
       spoilLemonsQty: day.spoilLemonsQty ?? 0,
       spoilLemonsCents: day.spoilLemonsCents ?? 0,
       spoilSugarQty: day.spoilSugarQty ?? 0,

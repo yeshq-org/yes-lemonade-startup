@@ -24,7 +24,7 @@ function overnightLoss(yesterday: DayResult): string | null {
   }
   if (parts.length === 0) return null
   const list = parts.length === 1 ? parts[0]! : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
-  return `Overnight, ${list}. That waste is not inside cost of goods. It still destroys value.`
+  return `Overnight, ${list}. That waste is not inside cost of goods. It shows on the receipt as spoilage and waste.`
 }
 
 /** What customers complained about, without naming a target recipe. */
@@ -83,8 +83,8 @@ export function morningBrief(weather: Weather, yesterday: DayResult | null): Bri
 
   if (
     yesterday.earningsPerHourCents !== null &&
-    yesterday.earningsPerHourCents < 150 &&
-    yesterday.sold >= 15
+    yesterday.earningsPerHourCents < 600 &&
+    yesterday.sold >= 20
   ) {
     return {
       kicker: 'About yesterday',
@@ -118,7 +118,7 @@ export function morningBrief(weather: Weather, yesterday: DayResult | null): Bri
     }
   }
 
-  if (yesterday.earningsPerHourCents !== null && yesterday.earningsPerHourCents >= 600) {
+  if (yesterday.earningsPerHourCents !== null && yesterday.earningsPerHourCents >= 1500) {
     return {
       kicker: 'About yesterday',
       text: 'That was a real business day. Repeat it on purpose: price for the weather, ice for the weather, hours you can actually fill.',
@@ -144,8 +144,8 @@ export function dayVerdict(day: DayResult): Verdict {
     }
   }
   const hourly = day.earningsPerHourCents ?? 0
-  const busyAndThin = day.sold >= 20 && hourly < 200
-  if (hourly >= 800) {
+  const busyAndThin = day.sold >= 25 && hourly < 600
+  if (hourly >= 1500) {
     return {
       headline: 'Yes. This was a real business day.',
       answer: busyAndThin
@@ -153,13 +153,13 @@ export function dayVerdict(day: DayResult): Verdict {
         : 'You got paid like someone who priced with intention. Sales, costs, and time all landed.',
     }
   }
-  if (hourly >= 350) {
+  if (hourly >= 1000) {
     return {
       headline: 'Mostly. The stand paid you for real.',
       answer: 'This is more than pocket change per hour. Before you scale it, see whether a longer day would dilute the rate.',
     }
   }
-  if (hourly >= 140) {
+  if (hourly >= 500) {
     return {
       headline: busyAndThin ? 'Busy stand. Thin pay.' : 'Not yet a strong business.',
       answer: busyAndThin
@@ -186,19 +186,19 @@ export function seasonVerdict(hourlyCents: number | null, netCents: number): Ver
       answer: 'There is no hourly rate without hours. A season of closed days did not build a business — it avoided one.',
     }
   }
-  if (hourlyCents >= 650 && netCents > 0) {
+  if (hourlyCents >= 1400 && netCents > 0) {
     return {
       headline: 'Yes. You built a business, not just a busy week.',
       answer: 'Season earnings per hour are the whole game. You kept enough after supplies, fees, and time for the stand to be worth running.',
     }
   }
-  if (hourlyCents >= 350 && netCents > 0) {
+  if (hourlyCents >= 1200 && netCents > 0) {
     return {
       headline: 'Close. The model works if you protect it.',
       answer: 'Profit is real. The next gain is usually waste, a smarter price on hot days, or fewer hours that do not add sales.',
     }
   }
-  if (hourlyCents >= 140) {
+  if (hourlyCents >= 600) {
     return {
       headline: 'You learned the loop. The pay is still a side hustle.',
       answer: 'Customers and sales happened. Earnings per hour say the business is not paying you like a skill yet.',

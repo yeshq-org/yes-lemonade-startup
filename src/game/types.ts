@@ -68,7 +68,15 @@ export interface DayResult {
   grossCents: number
   standFeeCents: number
   helperCents: number
+  /**
+   * Stand fee + helper + waste. Waste is value that left without becoming a sale:
+   * leftover ice that melts tonight, and lemons or sugar that go bad before tomorrow.
+   */
   otherCents: number
+  /** Melted ice plus spoiled lemons and sugar, counted as an other expense on this day. */
+  wasteCents: number
+  /** True on the final day of the season, when nothing is left to spoil overnight. */
+  lastDay?: boolean
   netCents: number
   earningsPerHourCents: number | null
   satisfaction: number | null
@@ -150,6 +158,8 @@ export interface GameState {
   competitionId: string | null
   gameId: string | null
   teamId: string | null
+  /** True once the player chose to post this finished season to the leaderboard. */
+  posted?: boolean
 }
 
 export const ITEM_IDS: ItemId[] = ['cups', 'lemons', 'sugar', 'ice']
