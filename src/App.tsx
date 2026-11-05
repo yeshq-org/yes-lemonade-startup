@@ -1,4 +1,4 @@
-import { Component, useState, type ReactNode } from 'react'
+import { Component, useEffect, useState, type ReactNode } from 'react'
 import { AccountProvider, useAccount } from './auth/AccountContext'
 import { GameSync } from './auth/GameSync'
 import { Career } from './components/screens/Career'
@@ -13,6 +13,7 @@ import { Selling } from './components/screens/Selling'
 import { SetupScreen } from './components/screens/SetupScreen'
 import { Shop } from './components/screens/Shop'
 import { Button, Shell } from './components/ui'
+import { supabase } from './lib/supabase'
 import { SAVE_KEY } from './game/storage'
 import { GameProvider, useGame } from './state/GameContext'
 import { NavContext } from './state/NavContext'
@@ -74,7 +75,7 @@ type Screen = 'gate' | 'howto' | 'play' | 'board'
 
 function Root() {
   const { state } = useGame()
-  const { configured, ready, profileReady, session, profile } = useAccount()
+  const { configured, ready, profileReady, session, profile, profileError, refreshProfile } = useAccount()
   const [screen, setScreen] = useState<Screen>('gate')
   const [boardBack, setBoardBack] = useState<'gate' | 'play'>('gate')
 
@@ -102,10 +103,17 @@ function Root() {
         />
       )
   } else if (!ready || (session && !profileReady)) {
+    body = <Opening />
+  } else if (session && profileError) {
     body = (
       <Shell>
         <main className="px-5 pt-16">
-          <p className="font-display text-3xl font-semibold">Opening the stand…</p>
+          <p className="font-display text-3xl font-semibold">We couldn't reach the stand.</p>
+          <p className="mt-3 text-ink-soft">Check your connection and try again.</p>
+          <div className="mt-6 flex flex-col gap-3">
+            <Button onClick={() => void refreshProfile()}>Try again</Button>
+            <Button onClick={() => void signOutAndReload()}>Sign out</Button>
+          </div>
         </main>
       </Shell>
     )
@@ -149,4 +157,39 @@ function Play({ onTitle }: { onTitle: () => void }) {
     default:
       return null
   }
+}
+
+async function signOutAndReload() {
+  try {
+    await supabase?.auth.signOut({ scope: 'local' })
+  } catch {
+    // ignore: we reload either way
+  }
+  window.location.reload()
+}
+
+function Opening() {
+  const [slow, setSlow] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setSlow(true), 4000)
+    return () => clearTimeout(t)
+  }, [])
+  return (
+    <Shell>
+      <main className="px-5 pt-16">
+        <p className="font-display text-3xl font-semibold">Opening the stand…</p>
+        {slow && (
+          <div className="mt-6">
+            <p className="text-ink-soft">Taking longer than usual…</p>
+            <div className="mt-4">
+              <Button onClick={() => window.location.reload()}>Reload</Button>
+            </div>
+            <button type="button" className="mt-4 underline text-ink-soft" onClick={() => void signOutAndReload()}>
+              Sign out and start over
+            </button>
+          </div>
+        )}
+      </main>
+    </Shell>
+  )
 }
