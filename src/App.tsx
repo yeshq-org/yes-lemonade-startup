@@ -1,10 +1,14 @@
-import { Component, useEffect, useState, type ReactNode } from 'react'
+import { Component, lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
 import { AccountProvider, useAccount } from './auth/AccountContext'
 import { GameSync } from './auth/GameSync'
 import { Career } from './components/screens/Career'
 import { HowTo } from './components/screens/HowTo'
 import { LeaderboardScreen } from './components/screens/LeaderboardScreen'
 import { LoginScreen } from './components/screens/LoginScreen'
+
+const DevShot = import.meta.env.DEV
+  ? lazy(() => import('./components/screens/AuthShot').then((mod) => ({ default: mod.AuthShot })))
+  : null
 import { AccountsOff } from './components/screens/AccountsOff'
 import { Morning } from './components/screens/Morning'
 import { Recipe } from './components/screens/Recipe'
@@ -89,8 +93,15 @@ function Root() {
     onLeaderboard: () => openBoard(screen === 'play' ? 'play' : 'gate'),
   }
 
+  const shot = import.meta.env.DEV ? new URLSearchParams(window.location.search).get('shot') : null
   let body: ReactNode
-  if (!configured) {
+  if (shot && DevShot) {
+    body = (
+      <Suspense fallback={null}>
+        <DevShot name={shot} />
+      </Suspense>
+    )
+  } else if (!configured) {
     body =
       screen === 'board' ? (
         <LeaderboardScreen onBack={() => setScreen(boardBack)} />

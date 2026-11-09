@@ -204,6 +204,50 @@ export async function submitFinishedGame(state: GameState, displayName: string, 
   if (error) throw error
 }
 
+const COMPETITION_COLUMNS = 'id, competition_name, visibility, mode, join_code, host_user_id, scoring_version, status'
+
+/** Competitions this signed-in player hosts. */
+export async function listHostedCompetitions(userId: string): Promise<CompetitionRow[]> {
+  const sb = client()
+  const { data: hostedRows, error } = await sb.from('competitions').select(COMPETITION_COLUMNS).eq('host_user_id', userId)
+  if (error) throw error
+  const { data: memberships, error: memberError } = await sb
+    .from('memberships')
+    .select('competition_id')
+    .eq('user_id', userId)
+    .eq('role', 'host')
+  if (memberError) throw memberError
+  const have = new Set((hostedRows ?? []).map((row) => row.id as string))
+  const extra = (memberships ?? []).map((row) => row.competition_id as string).filter((id) => !have.has(id))
+  let more: CompetitionRow[] = []
+  if (extra.length > 0) {
+    const { data, error: extraError } = await sb.from('competitions').select(COMPETITION_COLUMNS).in('id', extra)
+    if (extraError) throw extraError
+    more = (data ?? []) as CompetitionRow[]
+  }
+  return [...((hostedRows ?? []) as CompetitionRow[]), ...more]
+}
+
+export interface MemberName {
+  id: string
+  username: string | null
+  displayName: string
+}
+
+/** Usernames in one competition. Email addresses are not selected. */
+export async function listCompetitionMembers(competitionId: string): Promise<MemberName[]> {
+  const sb = client()
+  const { data: memberships, error } = await sb.from('memberships').select('user_id').eq('competition_id', competitionId)
+  if (error) throw error
+  const ids = (memberships ?? []).map((row) => row.user_id as string)
+  if (ids.length === 0) return []
+  const { data, error: userError } = await sb.from('users').select('id, username, display_name').in('id', ids)
+  if (userError) throw userError
+  return ((data ?? []) as { id: string; username: string | null; display_name: string }[])
+    .map((row) => ({ id: row.id, username: row.username, displayName: row.display_name }))
+    .sort((a, b) => (a.username ?? a.displayName).localeCompare(b.username ?? b.displayName))
+}
+
 /** Close a finished season without posting it. It stays in the player's own games. */
 export async function finishGame(gameId: string, state: GameState): Promise<void> {
   const { error } = await client().rpc('finish_game', { p_game_id: gameId, p_state: state })

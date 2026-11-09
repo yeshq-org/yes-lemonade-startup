@@ -26,7 +26,9 @@ VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 VITE_SUPABASE_ANON_KEY=YOUR_ANON_KEY
 ```
 
-Apply `supabase/migrations/20261002120000_accounts_and_leaderboards.sql` in the Supabase SQL editor (or `supabase db push`). In Authentication, allow email/password sign-up. For a local try without confirmation mail, turn off “Confirm email”.
+Apply every file in `supabase/migrations/` in filename order (Supabase SQL editor, or `supabase db push`). The latest file, `20261109160000_pin_login.sql`, adds username + PIN sign-in. It does not change old scores. After that migration, deploy the `pin-auth` Edge Function and set a `PIN_PEPPER` secret before using PIN sign-in. Existing email accounts keep signing in with email and password. Do not put the service-role key in this file or in the browser.
+
+Email/password can stay on for those older accounts. New players do not need it, and the PIN function does not send email.
 
 If those env vars are missing, the app shows **Accounts are not configured** and does not crash. A season already stored in `localStorage` (`yes-lemonade-startup-v1`) can be finished on this device. It is not posted to a board.
 
@@ -54,7 +56,7 @@ This agent cannot turn on Pages or write secrets. Those two settings stay with A
 
 ## How a season works
 
-1. Sign in with email and a display name. The name is the only public identity. Email is never shown on a board.
+1. New players pick a username and a 4-digit PIN. No email is asked for. Players who already signed up with email use that email and password, and their scores stay. Leaderboards show the username only.
 2. Choose **Individual** (7 days) or **Team** (30 days), then **Public** or **Private**. A private competition gets a name and a code like `YES-4827`.
 3. Each morning you get the weather and a short mentor note.
 4. Buy cups, lemons, sugar, and ice in packs. Prices shift a little every day. Cups carry over. Lemons spoil after 3 nights, sugar after 10, and ice is gone every morning.
