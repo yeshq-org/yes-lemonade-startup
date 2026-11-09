@@ -7,6 +7,7 @@ import {
   joinByCode,
   joinPublic,
   joinTeam,
+  listHostedCompetitions,
   listOpenGames,
   listTeams,
   startGame,
@@ -15,6 +16,8 @@ import {
   type TeamRow,
 } from '../../auth/api'
 import { useAccount } from '../../auth/AccountContext'
+import { canOfferPinReset } from '../../../supabase/functions/_shared/pinPolicy.ts'
+import { PinResetScreen } from './PinResetScreen'
 import { daysForMode, SCORING_VERSION } from '../../game/leaderboard'
 import { randomSeed } from '../../game/rng'
 import { createGame } from '../../game/setup'
@@ -36,7 +39,7 @@ export function SetupScreen({
   onLeaderboard: () => void
 }) {
   const { state, dispatch } = useGame()
-  const { profile } = useAccount()
+  const { profile, session } = useAccount()
   const heading = useFocusHeading()
   const legacy = state && !state.mode
   const active = state?.mode ? state : null
@@ -53,6 +56,9 @@ export function SetupScreen({
   const [busy, setBusy] = useState(false)
   const [openGames, setOpenGames] = useState<GameRow[]>([])
   const [hostCode, setHostCode] = useState<string | null>(null)
+  const [hosted, setHosted] = useState<CompetitionRow[]>([])
+  const [resetOpen, setResetOpen] = useState(false)
+  const userId = session?.user.id ?? null
 
   useEffect(() => {
     if (!profile) return
@@ -60,6 +66,21 @@ export function SetupScreen({
       .then(setOpenGames)
       .catch(() => setOpenGames([]))
   }, [profile])
+
+  useEffect(() => {
+    if (!userId) return
+    let cancel = false
+    listHostedCompetitions(userId)
+      .then((rows) => {
+        if (!cancel) setHosted(rows)
+      })
+      .catch(() => {
+        if (!cancel) setHosted([])
+      })
+    return () => {
+      cancel = true
+    }
+  }, [userId])
 
   const [confirmEnd, setConfirmEnd] = useState<string | null>(null)
 
@@ -231,6 +252,17 @@ export function SetupScreen({
   const serverGames = openGames.filter((game) => game.id !== active?.gameId)
   const soloInProgress =
     (active?.mode === 'individual_7' && active.phase !== 'career') || serverGames.some((game) => game.mode === 'individual_7')
+  const canReset = profile ? canOfferPinReset(profile.role, hosted.length) : false
+
+  if (resetOpen && profile) {
+    return (
+      <PinResetScreen
+        role={profile.role}
+        competitions={hosted.map((item) => ({ id: item.id, name: item.competition_name }))}
+        onBack={() => setResetOpen(false)}
+      />
+    )
+  }
 
   return (
     <Shell>
@@ -244,6 +276,16 @@ export function SetupScreen({
         <h1 ref={heading} tabIndex={-1} className="mt-4 font-display text-4xl leading-tight font-semibold outline-none">
           {profile ? `Hi, ${profile.display_name || profile.username}` : 'Start a season'}
         </h1>
+        {canReset && (
+          <button
+            type="button"
+            data-testid="open-pin-reset"
+            className="mt-2 min-h-12 self-start text-left font-semibold text-teal"
+            onClick={() => setResetOpen(true)}
+          >
+            Reset a player's PIN
+          </button>
+        )}
         {legacy && !replaceLegacy && (
           <Card className="mt-4">
             <p className="font-semibold">A season saved on this device can be finished here.</p>
